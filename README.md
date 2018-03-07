@@ -12,6 +12,7 @@ Pool-Seq analysis software
   1. Navigate to working directory
   2. Clone repo
     `git clone https://github.com/ToBoDev/assessPool.git` 
-  3. Open assessPool Rproject file
-  4. Run desired scripts from Rstudio
+  3. Open assessPool Rproject in RStudio
+  4. Open assessPool_main.Rmd file in RStudio
+  5. Follow the steps in the main file to complete your analysis
   
