@@ -8,7 +8,7 @@ Pool-Seq analysis software
 * Imports Popoolation2 output
 * Generates population genetic statistics and plots for data visualization.
 
-# Quick Start
+### Quick Start
   1. Navigate to working directory
   2. Clone repo
     `git clone https://github.com/ToBoDev/assessPool.git` 
