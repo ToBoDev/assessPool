@@ -36,7 +36,8 @@ snp_diff <- function(vcf1, vcf2) {
     "%)"
   )
 }
-vcftools_path <- 'export PATH="/home/evan/miniconda2/bin:"$PATH;'
+#Insert path to VCFtools below (must be 0.1.12 or newer)
+vcftools_path <- 'export PATH="<PATH_TO_VCFTOOLS>:"$PATH;'
 
 
 ```

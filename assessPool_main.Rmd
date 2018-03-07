@@ -38,10 +38,10 @@ library(here)
 library(seqinr)
 
 #import R functions from other scripts
-source("scripts/cessPOOL/cessPOOL_preAnalysis.R")
-source("scripts/cessPOOL/cessPOOL_syncSetup.R")
-source("scripts/cessPOOL/cessPOOL_postPopoolation.R")
-source("scripts/cessPOOL/cessPOOL_poolHeatmaps.R")
+source("scripts/assessPool/assessPool_preAnalysis.R")
+source("scripts/assessPool/assessPool_syncSetup.R")
+source("scripts/assessPool/assessPool_postPopoolation.R")
+source("scripts/assessPool/assessPool_poolHeatmaps.R")
 working_dir <- here()
 ```
 
