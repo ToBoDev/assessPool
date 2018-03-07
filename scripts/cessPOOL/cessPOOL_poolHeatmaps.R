@@ -27,7 +27,8 @@ poolHeatmaps <- function(heatmap_cov, postpop){
   
   #summarize FST/FET
   sum.postpop <- spread(postpop, analysis, value) %>% group_by(pair) %>% summarise(Fst=mean(.fst), chisq=unlist(sumlog2(.fet)[1]), df=unlist(sumlog(.fet)[2]), Pvals=unlist(sumlog(.fet)[3]))
-  tmp.cols <- colsplit(sum.postpop$pair, "_", c(NA,"pop1", "pop2"))[,-1]
+  tmp.cols <- colsplit(sum.postpop$pair, project_name, c("pn", "pop"))[,-1]
+  tmp.cols <- colsplit(tmp.cols, "_", c("pop1", "pop2"))[,-1]; colnames(tmp.cols) <- c("pop1", "pop2")
   sum.postpop$pop1 <- tmp.cols$pop1; sum.postpop$pop2 <- tmp.cols$pop2; rm(tmp.cols)
   
   #set up FST/Chi-Square matrices
