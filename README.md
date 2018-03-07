@@ -9,10 +9,11 @@ Pool-Seq analysis software
 * Generates population genetic statistics and plots for data visualization.
 
 ### Quick Start
-  1. Navigate to working directory
-  2. Clone repo
+  1. Navigate to desired working directory on your computer
+  2. Clone repo into directory
     `git clone https://github.com/ToBoDev/assessPool.git` 
   3. Open assessPool Rproject in RStudio
   4. Open assessPool_main.Rmd file in RStudio
+  5. Make sure you have your SNP file (.vcf) and reference file (.fasta) in the working directory
   5. Follow the steps in the main file to complete your analysis
   
