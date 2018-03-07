@@ -1,0 +1,156 @@
+---
+title: "Filtering"
+output: html_notebook
+---
+### initialize
+
+
+```{r}
+library(here)
+rm(list=ls())
+working_dir <- paste(here(), "/filtering", sep="")
+```
+
+```{r "setup", include=FALSE}
+require("knitr")
+opts_knit$set(root.dir = working_dir)
+```
+
+
+```{r}
+
+vcf_file <- list.files(pattern="*.vcf")[1]
+
+snp_count <- function(vcf) {system(paste("mawk '!/#/'", as.character(vcf), "| wc -l", sep=" "), intern=T)}
+snp_diff <- function(vcf1, vcf2) {
+  message(
+    snp_count(vcf2),
+    " SNPs kept. ",
+    as.numeric(snp_count(vcf1)) - as.numeric(snp_count(vcf2)),
+    "(",
+    round(100 - (as.numeric(snp_count(vcf2)) / as.numeric(snp_count(vcf1))) * 100, 2),
+    "%) filtered. Cummulative filtered: ",
+    as.numeric(snp_count(vcf_file)) - as.numeric(snp_count(vcf2)),
+    "(",
+    round(100 - (as.numeric(snp_count(vcf2)) / as.numeric(snp_count(vcf_file))) * 100, 2),
+    "%)"
+  )
+}
+vcftools_path <- 'export PATH="/home/evan/miniconda2/bin:"$PATH;'
+
+
+```
+
+
+```{r}
+system("curl -L -O https://github.com/jpuritz/dDocent/raw/master/scripts/ErrorCount.sh")
+system("chmod +x ErrorCount.sh")
+
+system("curl -L -O https://github.com/jpuritz/dDocent/raw/master/scripts/filter_hwe_by_pop.pl")
+system("chmod +x filter_hwe_by_pop.pl")
+
+system("curl -L -O https://github.com/jpuritz/dDocent/raw/master/scripts/dDocent_filters")
+system("chmod +x dDocent_filters")
+```
+
+
+```{r}
+message(paste(snp_count(vcf_file), "Starting SNPs", sep=" "))
+system(paste("./ErrorCount.sh", vcf_file, sep=" "))
+```
+
+
+### Filter by quality, minimum allele count, depth. 
+
+```{r}
+system(paste(vcftools_path,"vcftools --vcf", vcf_file, "--minQ 30 --minDP 4 --recode --recode-INFO-all --out F1"))
+snp_diff(vcf_file, "F1.recode.vcf")
+
+system(paste("./ErrorCount.sh", "F1.recode.vcf", sep=" "))
+```
+
+### Maximum missing genotypes (accross all indvs-removes those with ./., i.e. DP filter)
+
+```{r}
+#system(paste(vcftools_path, " vcftools --vcf F1.recode.vcf --max-missing-count 1 --recode --recode-INFO-all --out F2"))
+#snp_diff("F1.recode.vcf", "F2.recode.vcf")
+```
+
+```{r}
+#system(paste(vcftools_path,"bash dDocent_filters F1.recode.vcf ddocent_filters"))
+#snp_diff(vcf_file, "ddocent_filters.vcf")
+#system(paste("./ErrorCount.sh", vcf_file, sep=" "))
+```
+
+### 5-step dDcoent filters
+
+```{r}
+
+#Allele Balance
+#system(paste(vcftools_path, ' vcffilter -s -f "AB > 0.25 & AB < 0.75 | AB < 0.01" F2.recode.vcf > F3.vcf'))
+#snp_diff("F2.recode.vcf", "F3.vcf")
+
+#Ratio of mapping qualities between reference and alternate alleles
+system(paste(vcftools_path, ' vcffilter -f "MQM / MQMR > 0.6 & MQM / MQMR < 1.05" F1.recode.vcf > F4.vcf'))
+snp_diff("F1.recode.vcf", "F4.vcf")  
+
+#
+system(paste(vcftools_path, ' vcffilter -f "QUAL / DP > 0.25" F4.vcf > F5.vcf'))
+snp_diff("F4.vcf", "F5.vcf")
+
+system(paste("./ErrorCount.sh", "F5.vcf", sep=" "))
+```
+
+### Visualize 
+```{r}
+system(paste("cut -f8 F5.vcf | grep -oe ","DP=[0-9]*"," | sed -s 's/DP=//g' > F5.DEPTH"))
+    
+system("mawk '!/#/' F5.vcf | cut -f1,2,6 > F5.loci.qual")
+dp1 <- system("mawk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }' F5.DEPTH", intern=T)
+
+dp2 <- system(paste('python -c "print int(', dp1,'+3*(', dp1,'**0.5))"', sep=""), intern=T)
+
+system(paste("paste F5.loci.qual F5.DEPTH | mawk -v x=",dp2," '$4 > x' | mawk '$3 < 2 * $4' > F5.lowQDloci", sep=""))
+
+system(paste(vcftools_path, ' vcftools --vcf F5.vcf --site-depth --exclude-positions F5.lowQDloci --out F6'))
+snp_diff("F5.vcf", "F6.ldepth")
+
+system("cut -f3 F6.ldepth > F5.site.depth")
+system("mawk '!/D/' F5.site.depth | mawk -v x=4 '{print $1/x}' > meandepthpersite")
+```
+
+```{sh}
+gnuplot << \EOF 
+set terminal dumb size 120, 30
+set autoscale
+set xrange [0:300] 
+unset label
+set title "Histogram of mean depth per site"
+set ylabel "Number of Occurrences"
+set xlabel "Mean Depth"
+binwidth=2
+bin(x,width)=width*floor(x/width) + binwidth/2.0
+set xtics 5
+plot 'meandepthpersite' using (bin($1,binwidth)):(1.0) smooth freq with boxes
+pause -1
+EOF
+```
+
+```{r}
+system(paste(vcftools_path, " vcftools --vcf  F5.vcf --recode-INFO-all --out F7 --max-meanDP 100 --exclude-positions F5.lowQDloci --recode"))
+snp_diff("F5.vcf", "F7.recode.vcf")
+
+
+system(paste("./ErrorCount.sh", "F7.recode.vcf", sep=" "))
+```
+
+
+```{r}
+system(paste(vcftools_path, " vcfallelicprimitives F7.recode.vcf --keep-info --keep-geno > filtered.prim.vcf"))
+system(paste(vcftools_path, " vcftools --vcf filtered.prim.vcf --remove-indels --recode --recode-INFO-all --out SNP.filtered"))
+
+system("cp SNP.filtered.recode.vcf ../filtered_SNPS.vcf")
+system("cp F1.recode.vcf ../bare_filtered_SNPS.vcf")
+```
+
+
