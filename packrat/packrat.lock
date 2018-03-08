@@ -1,6 +1,6 @@
 PackratFormat: 1.4
 PackratVersion: 0.4.8.1
-RVersion: 3.4.2
+RVersion: 3.4.3
 Repos: BioCextra=https://bioconductor.org/packages/3.5/extra,
     BioCsoft=https://bioconductor.org/packages/3.6/bioc,
     BioCann=https://bioconductor.org/packages/3.6/data/annotation,
@@ -204,6 +204,11 @@ Source: Bioconductor
 Version: 0.18.0
 Hash: e19ff73907143d1f2cfea21291efaa52
 Requires: BiocGenerics, IRanges, S4Vectors, zlibbioc
+
+Package: ade4
+Source: CRAN
+Version: 1.7-10
+Hash: ae1335c839b1efd3b76ba7a3f5d19b6b
 
 Package: assertthat
 Source: CRAN
@@ -579,6 +584,17 @@ Version: 0.5.0
 Hash: 77d3b989d0995d27c9b2fa7da4093f34
 Requires: R6, RColorBrewer, Rcpp, dichromat, labeling, munsell, plyr,
     viridisLite
+
+Package: segmented
+Source: CRAN
+Version: 0.5-3.0
+Hash: c8086ff14d941e4f763471f86224497b
+
+Package: seqinr
+Source: CRAN
+Version: 3.4-5
+Hash: e4120bf216a2276febf379917e35487a
+Requires: ade4, segmented
 
 Package: seqminer
 Source: CRAN
