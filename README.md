@@ -17,3 +17,4 @@ Pool-Seq analysis software (in dev)
   5. Make sure you have your SNP file (.vcf) and reference file (.fasta) in the working directory
   5. Follow the steps in the main file to complete your analysis
   
+ See the [wiki](https://github.com/ToBoDev/assessPool/wiki) for more information!
