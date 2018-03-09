@@ -55,7 +55,7 @@ https://www.cpan.org/
 Ensure the following files are located in the working directory:
 
   * \*.vcf        | *FreeBayes produced VCF file*
-  * \*.fasta      | *reference fasta (produced by dDocent (RAINBOW) or from NCBI if mapped directly to reference) *
+  * \*.fasta      | *reference fasta (produced by dDocent or from NCBI if mapped directly to reference) *
 
 ### Test to see if necessary PERL module is installed
  * This step may ask for your password; make sure you have admin permissions on your machine
