@@ -70,7 +70,6 @@ project_name <- "test_new"
 #replace below with paths to the correct files
 vcf_file <- list.files(pattern="*.vcf")[1]
 ref_file <- list.files(pattern="*.fasta")[1]
-#cat_bam <- list.files(pattern="*.bam")[1]
 
 #optional: add your populations/pool labels here if they differ from VCF
 #NOTE: it is very important that these names be in the same order as they appear in your VCF file
