@@ -57,30 +57,6 @@ Ensure the following files are located in the working directory:
   * \*.vcf        | *FreeBayes produced VCF file*
   * \*.fasta      | *reference fasta (produced by dDocent or from NCBI if mapped directly to reference) *
 
-### Test to see if necessary PERL module is installed
- * This step may ask for your password; make sure you have admin permissions on your machine
- * Will not work on Windows machines; you will instead need to run:
-      * "set PERL5LIB=c:\\path\\to\\dir" on the command line after the module is installed to add it to the PERL library. 
-```{r PerlModuleCheck}
-#test to see if Perl module for Fisher t-test is installed - needed to run PoPoolation2
-result = tryCatch({
-    #if installed, add path to @INC 
-    lib <- system("perldoc -l Text::NSP::Measures::2D::Fisher::twotailed", intern=TRUE)
-    }, 
-    warning=function(w){ 
-        #if it's not installed, install it 
-        system("sudo cpan App::cpanminus") #install cpan minus
-        system("sudo cpanm Text::NSP::Measures::2D::Fisher::twotailed") #install ttest
-    }, finally=function(f){
-        #add path to @INC
-        lib <- system("perldoc -l Text::NSP::Measures::2D::Fisher::twotailed", intern=TRUE)
-        dir <- gsub("twotailed.pm", "", lib)
-        system(paste("export PERL5LIB=",dir,sep=""))
-        system(paste("export PERLLIB=",dir,sep=""))
-    }
-)
-```
-
 ### Pre-Analysis Setup Parameters
 If desired, set project name, paths to input files, and basic filter parameters as described below.  
 ```{r PreAnalysisParameters}
