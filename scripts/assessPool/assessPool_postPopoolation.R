@@ -133,7 +133,7 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
     #assign min in-population coverage levels to SNPs
     for(i in 1:length(covs)){
       df_name <- paste("popl.master.", covs[i],"x", sep="")
-      d <- postpop.master.wide[apply(postpop.master.wide[,grep("DP.", names(postpop.master.wide))], 1, function(x) all(x >= covs[i])),]
+      d <- postpop.master.wide[apply(postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))], 1, function(x) all(x >= covs[i])),]
       d$MinCoverage <- covs[i]; assign(df_name, d)
       df_names_total[df_index] <- paste(df_name); df_index <- df_index+1
       message(paste(nrow(d)," SNPs at ",covs[i],"x coverage.", sep=""))
