@@ -106,6 +106,24 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
     as.prefilter <- as
     message("\n", paste(nrow(as), " variable sites before filtering.", sep=""))
     
+    #if any population has missing data (e.g. all zeroes) remove them from analysis
+    dp.cols <- grep("DP\\.", names(as))
+    sums <- apply(as[,dp.cols], 2, function(x) sum(x, na.rm=T))
+    if (any(as.numeric(sums) == 0)){
+      invalid_pops <- data.frame(strsplit(names(which(sums == 0)), "\\."))[2,]
+      for (i in invalid_pops){
+        temp_inval <- as.character(i)
+        print(temp_inval)
+        temp.cols <- grep(temp_inval, names(as))
+        print(names(as)[temp.cols])
+        
+        #remove columns containing this population
+        as <- as[,-temp.cols]
+        POPS <- POPS[which(POPS!=temp_inval)]
+        message("Removed ",temp_inval," pool due to lack of data.")
+      }
+    }     
+                 
     #Apply additional filters before exporting
     #First filter by SNPs only called in 1 pool (i.e., no comparisons)
     as <- as[which(as$NS>min.pool.number),]    #Number samples with called genotypes (at any coverage)
@@ -113,8 +131,8 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
     as <- as[which(as$TDP>=min.depth.threshold),]  #TotalDepth (all pools) 
     message(paste(nrow(as), "variable sites after filtering for total depth."))
     as <- as[which(as$INS.len<=max.indel.length & as$DEL.len<=max.indel.length),] #length of indel
-    message(paste(nrow(as), "variable sites after filtering for indel length."))
-    
+    message(paste(nrow(as), "variable sites after filtering for indel length."))      
+                 
     #clean up list variables 
     #get ref depth and alternate depth columns, coerce to character
     ao.cols <- grep("AO\\.", names(as)); ro.cols <- grep("RO\\.", names(as))
