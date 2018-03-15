@@ -120,6 +120,7 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
         #remove columns containing this population
         as <- as[,-temp.cols]
         POPS <- POPS[which(POPS!=temp_inval)]
+        popcomb <- combn(POPS,2) 
         message("Removed ",temp_inval," pool due to lack of data.")
       }
     }     
