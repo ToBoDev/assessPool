@@ -113,9 +113,7 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
       invalid_pops <- data.frame(strsplit(names(which(sums == 0)), "\\."))[2,]
       for (i in invalid_pops){
         temp_inval <- as.character(i)
-        print(temp_inval)
         temp.cols <- grep(temp_inval, names(as))
-        print(names(as)[temp.cols])
         
         #remove columns containing this population
         as <- as[,-temp.cols]
