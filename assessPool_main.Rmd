@@ -110,6 +110,7 @@ as <- pa_list_out$as
 as.st <- pa_list_out$as.st 
 POPS <- pa_list_out$POPS 
 popcomb <- pa_list_out$popcomb #rename to poolcomb
+project_name <- pa_list_out$project_name
 
 ```
 
