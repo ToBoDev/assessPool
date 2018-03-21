@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#(c) Jon Puritz http://ddocent.com/
 export LC_ALL=en_US.UTF-8
 
 echo "This script counts the number of potential genotyping errors due to low read depth"
