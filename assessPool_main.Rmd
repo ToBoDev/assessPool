@@ -67,11 +67,6 @@ vcflib_PATH <- tryCatch({
 
 ```
 
-You will need to have samtools installed on your machine for this script to work:
-http://www.htslib.org/  
-You will also need PERL's cpan:
-https://www.cpan.org/
-
 Ensure the following files are located in the working directory:
 
   * \*.vcf        | *FreeBayes produced VCF file*
