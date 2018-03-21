@@ -146,7 +146,6 @@ filter_mispaired <- function(working_dir, project_name, vcf_file, fdf, out){
 ### Filter by quality/depth ratio (helps remove low-quality, high-depth reads)
 filter_qualdepth <- function(working_dir, project_name, vcf_file, x, fdf, out){
   setwd(working_dir)
-  system(paste(vcflib_PATH, 'vcffilter -f "QUAL / DP > 0.25" bare.recode.vcf > Qual_DP.vcf', sep="/"))
   system(paste(paste(vcflib_PATH, 'vcffilter', sep="/"), '-f "QUAL / DP >', x, '| QUAL / DP =', x, '"', paste("filtered_",vcf_file,sep=""), ">", paste("temp_",vcf_file,sep="")))
   
   message("After filtering by minimum quality/depth ratio: (",x,"):")
