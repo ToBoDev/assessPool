@@ -184,7 +184,7 @@ Summary of # SNPs retained after each individual filtering step.
 ```{r}
 #Number of SNPs kept after each filter applied
 filter_df$Filter_f <- factor(filter_df$Filter, levels=unique(filter_df$Filter))
-ggplot(data=filter_df) + geom_bar(aes(x=Filter_f, y=SNPs), stat="identity") + theme_bw() + theme(axis.text.x = element_text(angle = -70, hjust=-0.1), plot.title = element_text(hjust = 0.5)) + ggtitle("Number of SNPs after each filter")
+ggplot(data=filter_df) + geom_bar(aes(x=Filter_f, y=SNPs), stat="identity") + theme_bw() + theme(axis.text.x = element_text(angle = -70, hjust=-0.1), plot.title = element_text(hjust = 0.5)) + ggtitle("Number of SNPs after each filter") + xlab("\nFilter") + ylab("\n# SNPs")
 filter_df$Filter_f <- NULL
 ```
 
