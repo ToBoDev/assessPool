@@ -1,4 +1,4 @@
-# assessPool
+# assessPool v1.0.0
 Pool-Seq analysis software (in dev)
 
 * Filters SNPs based on adjustable criterion with suggestions for pooled data 
