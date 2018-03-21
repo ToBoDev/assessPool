@@ -11,7 +11,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 #import necessary R libraries
 
 rm(list=ls())
-packrat::restore() #installs necessary libraries if they are not already included
+packrat::restore(restart=TRUE) #installs necessary libraries if they are not already included
 packrat::on() #initializes packrat library
 #Install/upclte Bioconductor
 #source("https://bioconductor.org/biocLite.R")
@@ -40,11 +40,31 @@ library(here)
 library(seqinr)
 
 #import R functions from other scripts
+source("scripts/assessPool/assessPool_vcfFilter.R")
 source("scripts/assessPool/assessPool_preAnalysis.R")
 source("scripts/assessPool/assessPool_syncSetup.R")
 source("scripts/assessPool/assessPool_postPopoolation.R")
 source("scripts/assessPool/assessPool_poolHeatmaps.R")
+
+#set working directory
 working_dir <- here()
+
+#install vcflib if not already done
+vcflib_PATH <- tryCatch({
+    system('vcffilter', intern=T)
+    return("")
+  }, error = function(e){ 
+    vcflib_PATH <- paste(working_dir, "scripts", "vcflib", "bin", sep="/")
+    
+    if (!file.exists(paste(working_dir, "scripts", "vcflib",sep="/"))){
+      setwd(paste(working_dir, "scripts", sep="/"))
+      system("git clone --recursive https://github.com/vcflib/vcflib.git")
+      system(paste("cd ", paste(working_dir, "scripts", "vcflib", sep="/"), "; make", sep=""))
+      setwd(working_dir)
+    } 
+    return(vcflib_PATH)
+})
+
 ```
 
 You will need to have samtools installed on your machine for this script to work:
@@ -76,11 +96,101 @@ ref_file <- list.files(pattern="*.fasta")[1]
 #uncomment line below to use
 #POPS <- c('Pool1', 'Pool2', 'Pool3') 
 
-#filtering cutoffs - very basic filtering
-min.pool.number <- 1 #minimum number of pools needed for a SNP to be included (DEFAULT=1)
-min.depth.threshold <- 4 # minimum depth (total, not per pool) needed for a SNP to be included (DEFAULT=4)
-max.indel.length <- 5 #will remove any INDELS longer than this (DEFAULT=5)
+```
 
+### VCF Filtering Setup (OPTIONAL)
+It is strongly recommended that you filter your vcf file before proceeding to reduce sequencing errors and 
+improve your signal to noise ratio. If you have filtered your vcf before using assessPool, feel free to skip the
+steps below and continue to the PreAnalysisRun notebook chunk. Otherwise, follow the recommended filtering steps
+below before proceeding. 
+
+If you wish to start over with your filtering at any time, simply re-run the PreFilteringParameters chunk below.
+```{r PreFilteringParameters}
+
+show.filter.output <- TRUE #set to FALSE if you want to suppress verbose output
+
+#Path to vcftools v0.1.12 or higher - edit if warned below
+vcftools_PATH <- "export PATH=<PATH_TO_VCFTOOLS_0.1.12_or_later>:$PATH;"
+#example:
+#vcf_PATH <- " export PATH=/home/evan/miniconda2/bin/:$PATH;"
+
+#determine vcftools version
+version <-system('vcftools', intern=T)[2]
+if(grepl("0.1.11", version)) {
+     assign("vcftools_path_export",vcftools_PATH)
+     message("Please update vcftools to v0.1.12 or later, and/or edit vcf_PATH above")
+   } else {
+     assign("vcftools_path_export", "")
+     message("using VCFtools v0.1.12 or higher")
+}
+
+
+filter_df <- vcf_init(vcf_file, working_dir, show.filter.output)
+```
+
+### VCF Filtering Steps (OPTIONAL)
+The below steps will filter your SNPs into a "filtered_<x>.vcf", which will automatically be used in following steps.
+Steps can be re-run with different parameters as needed, but if you are going from a more stringent threshold to a less
+stringent one, it will be necessary to start your filtering over by re-running the PreFilteringParameters step first. 
+```{r}
+#Filter by pool number
+min.pool.number <- 1 #minimum number of pools needed for a SNP to be included (DEFAULT=1)
+filter_df <- filter_numpools(working_dir, project_name, vcf_file, min.pool.number, filter_df, show.filter.output)
+```
+```{r}
+#Filter by quality score
+min.quality.score <- 30 #drops SNPs with quality scores lower than this threshold (DEFAULT=30)
+filter_df <- filter_quality(working_dir, project_name, vcf_file, min.quality.score, filter_df, show.filter.output)
+```
+```{r}
+#Filter by minimum depth
+min.depth.threshold <- 3 #drops info called in fewer reads (total, not per pool) than this threshold (DEFAULT=3) 
+max.missing <- 11 #maximum amount of dropped genotypes due to low coverage for a SNP to be included
+#if you want to keep SNPs called in at least one pool, set this number equal to one less than your number of pools
+filter_df <- filter_mindepth(working_dir, project_name, vcf_file, min.depth.threshold, max.missing, filter_df, show.filter.output)
+```
+```{r}
+#Filter by allele length
+max.allele.length <- 10 #drops SNPs with an allele length greater than this threshold (DEFAULT=10)
+filter_df <- filter_maxallelelength(working_dir, project_name, vcf_file, max.allele.length, filter_df, show.filter.output)
+```
+```{r}
+#Filter by mispaired reads
+#drops SNPs in which all the reads supporting the reference allele are paired but not supporting the alternate allele
+filter_df <- filter_mispaired(working_dir, project_name, vcf_file, filter_df, show.filter.output)
+```
+```{r}
+#Filter by quality : depth ratio
+#drops SNPS with a quality score:depth ratio lower than this threshold (DEFAULT=.25)
+#this removes low quality, high depth SNPs e.g. loci that were likely overgrouped
+quality.depth.ratio <- .25 
+filter_df <- filter_qualdepth(working_dir, project_name, vcf_file, quality.depth.ratio, filter_df, show.filter.output)
+```
+```{r}
+#dDocent filtering based on mean depth per site vs. quality score
+#helps filter out true variants vs false variants
+filter_df <- filter_ddocent(working_dir, project_name, vcf_file, filter_df, show.filter.output)
+```
+```{r}
+#Use the histogram below to help choose a maximum mean depth cutoff - try to reduce trailing tail
+#NOTE - histogram generation requires minimum depth filter + ddocent filter to be run previously
+depths <- read.table("F5.DEPTH")
+ggplot(data=depths) + geom_histogram(aes(x=depths$V1/max.missing), binwidth=10) + xlab("Mean Depth") + ylab("# SNPs") + theme_bw()
+```
+```{r}
+#Filter by maximum mean depth
+max.mean.depth.threshold <- 400 #helps remove paralogs and multicopy loci
+filter_df <- filter_maxmeandepth(working_dir, project_name, vcf_file, max.mean.depth.threshold, filter_df, show.filter.output)
+#try re-running the histogram abvoe to see changes
+```
+
+### Filtering visualization (OPTIONAL)
+Summary of # SNPs retained after each individual filtering step.
+```{r}
+#Number of SNPs kept after each filter applied
+filter_df$Filter_f <- factor(filter_df$Filter, levels=unique(filter_df$Filter))
+ggplot(data=filter_df) + geom_bar(aes(x=Filter_f, y=SNPs), stat="identity") + theme_bw() + theme(axis.text.x = element_text(angle = -70, hjust=-0.1), plot.title = element_text(hjust = 0.5)) + ggtitle("Number of SNPs after each filter")
+filter_df$Filter_f <- NULL
 ```
 
 ### Run Pre-Analysis Setup
@@ -90,8 +200,7 @@ Takes parameters above and runs the script *preAnalysis.R*. This script reads th
   * dataframe **"stacked_df"**  | *filtered dataframe in long format, one row per pool comparison per variable site* 
   * list **"POPS"**             | *list of all pool names*
   * matrix **"popcomb"**        | *matrix of all possible pool comparisons*
-  
-NOTE: This step requires user input.
+
 ```{r PreAnalysisRun, warning=TRUE}
 
 #runs pre-analysis
@@ -121,7 +230,7 @@ Set parameters for data inclusion, analysis inclusion, and PoPoolation2 run as d
 ```{r PopoolationParameters}
 #options for data inclusion - if both are FALSE, only biallelic SNPs will be included in SYNC files
 include.multiallelic <- TRUE
-include.indels <- FALSE
+include.indels <- TRUE
 
 #choose which analyses you would like to perform
 perform_snpfreq <- FALSE #SNP frequency
@@ -137,8 +246,8 @@ perform_fet <- TRUE #Fisher's exact test
 min_count <- 2
 
 #the minimum coverage; used for SNP identification, the coverage in
-#ALL populations has to be higher or equal to this threshold, otherwise no SNP will be called. (DEFAULT=4
-min_cov <- 4
+#ALL populations has to be higher or equal to this threshold, otherwise no SNP will be called. (DEFAULT=4)
+min_cov <- 3
 
 #The maximum coverage; All populations are required to have coverages
 #lower or equal than the maximum coverage; Mandatory The maximum coverage may be provided as one of the following:
@@ -221,7 +330,7 @@ p_cutoff <- 0.05
 
 #if set to true, will pull contig sequences and create FASTA files for
 #strongly differentiated and alternatively fixed sites. 
-fasta_generation <- FALSE
+fasta_generation <- TRUE
 
 #minimum coverage levels to use for analysis series
 #coverage will go from the min to the max by the step, e.g.
@@ -352,7 +461,7 @@ plot_ly(z = chisq, colors = colorRamp(c("yellow", "red")), x = colnames(chisq), 
 hc.rows <- hclust(dist(fst))
 hc.cols <- hclust(dist(t(fst)))
 
-#heatmap(fst)
+heatmap(fst)
 
 # draw heatmap for first cluster
 #heatmap(fst[cutree(hc.rows,k=3)==1,], Colv=as.dendrogram(hc.cols), scale='none')

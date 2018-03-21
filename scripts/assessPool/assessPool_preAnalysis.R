@@ -41,6 +41,13 @@ clean.up.list <- function(data_in) {
 #creates master dataframe (wide-form) and stacked dataframe (long-form) for SYNC file creation
 preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.depth.threshold, max.indel.length, include.multiallelic, include.indels, vcf_file, ref_file) {
   
+    setwd(working_dir)
+  
+    #test to see if filtering occured - if so, use that vcf file
+    if (file.exists(paste("filtered_", vcf_file, sep=""))){
+      vcf_file <- (paste("filtered_", vcf_file, sep=""))
+    }
+  
     #creates directories for output and analysis
     #if directories already exist, will throw a warning message
     # To retrieve a subset of data from a VCF file, create a ScanVcfParam object. This object can specify genomic coordinates (ranges) or individual VCF elements to be extracted. When ranges are extracted, a tabix index file must exist for the VCF. See ?indexTabix for details.
@@ -51,7 +58,7 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
     tryCatch({
       dir.create(paste(working_dir, project_name, sep="/"))
     }, warning=function(w){
-      message("Warning: Project directory already exists - may overwrite files.")
+      message("\nWarning: Project directory already exists - may overwrite files.")
     })
     setwd(paste(working_dir, project_name, sep="/"))
     suppressWarnings(dir.create(paste(working_dir, project_name, "output", sep="/")))
@@ -103,9 +110,7 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
     
     #reorder columns and sort by chromosome and position
     as <- as[,c(1,which(names(as)=="CHROM"),which(names(as)=="POS"),2:(length(as)-2))]
-    as.prefilter <- as
-    message("\n", paste(nrow(as), " variable sites before filtering.", sep=""))
-    
+
     #if any population has missing data (e.g. all zeroes) remove them from analysis
     dp.cols <- grep("DP\\.", names(as))
     sums <- apply(as[,dp.cols], 2, function(x) sum(x, na.rm=T))
@@ -122,15 +127,6 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
         message("Removed ",temp_inval," pool due to lack of data.")
       }
     }     
-                 
-    #Apply additional filters before exporting
-    #First filter by SNPs only called in 1 pool (i.e., no comparisons)
-    as <- as[which(as$NS>min.pool.number),]    #Number samples with called genotypes (at any coverage)
-    message(paste(nrow(as), "variable sites after filtering for pool number."))
-    as <- as[which(as$TDP>=min.depth.threshold),]  #TotalDepth (all pools) 
-    message(paste(nrow(as), "variable sites after filtering for total depth."))
-    as <- as[which(as$INS.len<=max.indel.length & as$DEL.len<=max.indel.length),] #length of indel
-    message(paste(nrow(as), "variable sites after filtering for indel length."))      
                  
     #clean up list variables 
     #get ref depth and alternate depth columns, coerce to character
