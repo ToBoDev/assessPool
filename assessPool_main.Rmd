@@ -179,7 +179,7 @@ ggplot(data=depths) + geom_histogram(aes(x=depths$V1/max.missing), binwidth=10) 
 #Filter by maximum mean depth
 max.mean.depth.threshold <- 400 #helps remove paralogs and multicopy loci
 filter_df <- filter_maxmeandepth(working_dir, project_name, vcf_file, max.mean.depth.threshold, filter_df, show.filter.output)
-#try re-running the histogram abvoe to see changes
+#try re-running the histogram above to see changes
 ```
 
 ### Filtering visualization (OPTIONAL)
