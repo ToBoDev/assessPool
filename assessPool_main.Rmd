@@ -118,7 +118,6 @@ if(grepl("0.1.11", version)) {
      assign("vcftools_path_export",vcftools_PATH)
      stop("Please update vcftools to v0.1.12 or later, and/or edit vcf_PATH above")
    } else {
-     assign("vcftools_path_export", "")
      message("using VCFtools v0.1.12 or higher")
 }
 
