@@ -304,14 +304,15 @@ syncSetup(project_name=project_name,
 ### Run PoPoolation2 
 Runs PoPoolation2 to generate FST/FET values, using the .sync files and run script generated above. Note - this step may take a while! Will generate output files in "popoolation/" for each comparison for each analysis specified.
 ```{r PopoolationRun, warning=FALSE}
-setwd(paste(working_dir, project_name, "popoolation",sep="/"))
 
-if (length(list.files(pattern=".sync")>0)){ 
-  system(command="sh popool2_run.sh", wait=TRUE)
-  message("\n\nPopoolation2 run complete.")
-} else {
-    message("\n\nERROR: No .sync files found. Please run sync file setup step.")
-}
+#parallel options
+use_parallel <- TRUE #set to FALSE if not using GNU parallel
+no_cores <- 20 #number of cores to use for analysis (try not to use max)
+
+runPopoolation(use_parallel=use_parallel, 
+               no_cores=no_cores, 
+               working_dir=working_dir, 
+               project_name=project_name)
 
 ```
 
