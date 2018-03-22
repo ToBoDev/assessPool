@@ -323,8 +323,8 @@ Set parameters for post-PoPoolation analysis: FST cutoff, p-value cutoff, and de
 strong_diff <- 0.5
 
 #a p-value cutoff for Fisher's Exact Test between 0 and 1 
-#NOTE - will only affect output files, not calculations (DEFAULT=0.05)
-p_cutoff <- 0.05
+#NOTE - will only affect output files, not calculations (DEFAULT=0.01)
+p_cutoff <- 0.01
 
 #if set to true, will pull contig sequences and create FASTA files for
 #strongly differentiated and alternatively fixed sites. 
