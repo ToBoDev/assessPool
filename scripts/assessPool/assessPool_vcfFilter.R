@@ -39,7 +39,7 @@ snp_diff <- function(vcf1, wd, vcf2) {
 ### Filter by number of pools
 filter_numpools <- function(working_dir, project_name, vcf_file, x, fdf, out){
   setwd(working_dir)
-  system(paste(paste(vcflib_PATH, 'vcffilter', sep="/"), '-f "NS >', x, '| NS =', x, '"', paste("filtered_",vcf_file,sep=""), ">", paste("temp_",vcf_file,sep="")))
+  system(paste(paste(vcflib_PATH, 'vcffilter', sep=""), '-f "NS >', x, '| NS =', x, '"', paste("filtered_",vcf_file,sep=""), ">", paste("temp_",vcf_file,sep="")))
   
   message("After filtering by minimum number of pools (",x,"):")
   snp_diff(paste("filtered_",vcf_file,sep=""), working_dir, paste("temp_",vcf_file,sep=""))
@@ -104,7 +104,7 @@ filter_mindepth <- function(working_dir, project_name, vcf_file, x, y, fdf, out)
 ### Filter by max allele length
 filter_maxallelelength <- function(working_dir, project_name, vcf_file, x, fdf, out){
   setwd(working_dir)
-  system(paste(paste(vcflib_PATH, 'vcffilter', sep="/"), '-f "LEN <', x, '| LEN =', x, '"', paste("filtered_",vcf_file,sep=""), ">", paste("temp_",vcf_file,sep="")))
+  system(paste(paste(vcflib_PATH, 'vcffilter', sep=""), '-f "LEN <', x, '| LEN =', x, '"', paste("filtered_",vcf_file,sep=""), ">", paste("temp_",vcf_file,sep="")))
   
   message("After filtering by maximum allele length (",x,"):")
   snp_diff(paste("filtered_",vcf_file,sep=""), working_dir, paste("temp_",vcf_file,sep=""))
@@ -125,7 +125,7 @@ filter_maxallelelength <- function(working_dir, project_name, vcf_file, x, fdf, 
 ### Filter by mispaired reads
 filter_mispaired <- function(working_dir, project_name, vcf_file, fdf, out){
   setwd(working_dir)
-  system(paste(paste(vcflib_PATH, 'vcffilter', sep="/"), '-f "PAIRED > 0.05 & PAIREDR > 0.05 & PAIREDR / PAIRED < 1.75 & PAIREDR / PAIRED > 0.25 | PAIRED < 0.05 & PAIREDR < 0.05" -s', paste("filtered_",vcf_file,sep=""), ">", paste("temp_",vcf_file,sep="")))
+  system(paste(paste(vcflib_PATH, 'vcffilter', sep=""), '-f "PAIRED > 0.05 & PAIREDR > 0.05 & PAIREDR / PAIRED < 1.75 & PAIREDR / PAIRED > 0.25 | PAIRED < 0.05 & PAIREDR < 0.05" -s', paste("filtered_",vcf_file,sep=""), ">", paste("temp_",vcf_file,sep="")))
   
   message("After filtering for mispaired reads:")
   snp_diff(paste("filtered_",vcf_file,sep=""), working_dir, paste("temp_",vcf_file,sep=""))
@@ -146,7 +146,7 @@ filter_mispaired <- function(working_dir, project_name, vcf_file, fdf, out){
 ### Filter by quality/depth ratio (helps remove low-quality, high-depth reads)
 filter_qualdepth <- function(working_dir, project_name, vcf_file, x, fdf, out){
   setwd(working_dir)
-  system(paste(paste(vcflib_PATH, 'vcffilter', sep="/"), '-f "QUAL / DP >', x, '| QUAL / DP =', x, '"', paste("filtered_",vcf_file,sep=""), ">", paste("temp_",vcf_file,sep="")))
+  system(paste(paste(vcflib_PATH, 'vcffilter', sep=""), '-f "QUAL / DP >', x, '| QUAL / DP =', x, '"', paste("filtered_",vcf_file,sep=""), ">", paste("temp_",vcf_file,sep="")))
   
   message("After filtering by minimum quality/depth ratio: (",x,"):")
   snp_diff(paste("filtered_",vcf_file,sep=""), working_dir, paste("temp_",vcf_file,sep=""))
