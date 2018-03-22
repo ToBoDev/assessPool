@@ -52,7 +52,7 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
     #if directories already exist, will throw a warning message
     # To retrieve a subset of data from a VCF file, create a ScanVcfParam object. This object can specify genomic coordinates (ranges) or individual VCF elements to be extracted. When ranges are extracted, a tabix index file must exist for the VCF. See ?indexTabix for details.
     param <- ScanVcfParam(fixed = c("ALT","QUAL"), info = c("NS","DP","TYPE","LEN","NUMALT"), geno = c("DP","RO","AO","GT","GQ"))
-    as.vcf <- readVcf(vcf_file,ref_file, param); rm(param) ## Read-in data using VariantAnnotation
+    suppressWarnings(as.vcf <- readVcf(vcf_file,ref_file, param)); rm(param) ## Read-in data using VariantAnnotation
     project_name <- gsub(" ", "", project_name) 
   
     tryCatch({
