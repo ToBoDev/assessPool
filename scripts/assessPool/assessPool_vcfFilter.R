@@ -28,7 +28,7 @@ snp_diff <- function(vcf1, wd, vcf2) {
     as.numeric(snp_count(vcf1, wd)) - as.numeric(snp_count(vcf2, wd)),
     " (",
     round(100 - (as.numeric(snp_count(vcf2, wd)) / as.numeric(snp_count(vcf1, wd))) * 100, 2),
-    "%) filtered. Cummulative filtered: ",
+    "%) filtered. Cumulative filtered: ",
     as.numeric(snp_count(vcf_file, wd)) - as.numeric(snp_count(vcf2, wd)),
     " (",
     round(100 - (as.numeric(snp_count(vcf2, wd)) / as.numeric(snp_count(vcf_file, wd))) * 100, 2),
