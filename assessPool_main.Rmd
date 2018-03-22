@@ -48,6 +48,7 @@ source("scripts/assessPool/assessPool_poolHeatmaps.R")
 
 #set working directory
 working_dir <- here()
+vcftools_path_export <- ""
 
 #install vcflib if not already done
 vcflib_PATH <- tryCatch({
@@ -112,10 +113,10 @@ vcftools_PATH <- "export PATH=<PATH_TO_VCFTOOLS_0.1.12_or_later>:$PATH;"
 #vcf_PATH <- " export PATH=/home/evan/miniconda2/bin/:$PATH;"
 
 #determine vcftools version
-version <-system('vcftools', intern=T)[2]
+version <-system(paste(vcftools_path_export,'vcftools'), intern=T)[2]
 if(grepl("0.1.11", version)) {
      assign("vcftools_path_export",vcftools_PATH)
-     message("Please update vcftools to v0.1.12 or later, and/or edit vcf_PATH above")
+     stop("Please update vcftools to v0.1.12 or later, and/or edit vcf_PATH above")
    } else {
      assign("vcftools_path_export", "")
      message("using VCFtools v0.1.12 or higher")
