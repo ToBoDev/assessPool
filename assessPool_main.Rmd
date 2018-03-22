@@ -61,7 +61,7 @@ vcflib_PATH <- tryCatch({
     if (!file.exists(paste(working_dir, "scripts", "vcflib",sep="/"))){
       setwd(paste(working_dir, "scripts", sep="/"))
       system("git clone --recursive https://github.com/vcflib/vcflib.git")
-      system(paste("cd ", paste(working_dir, "scripts", "vcflib", sep="/"), "; make", sep=""))
+      system(paste("cd ", paste(working_dir, "scripts", "vcflib/", sep="/"), "; make", sep=""))
       setwd(working_dir)
     } 
     return(tmp)
