@@ -117,7 +117,7 @@ show.filter.output <- TRUE #set to FALSE if you want to suppress verbose output
 version <-system(paste(vcftools_path_export,'vcftools'), intern=T)[2]
 if(grepl("0.1.11", version)) {
      assign("vcftools_path_export",vcftools_PATH)
-     stop("Please update vcftools to v0.1.12 or later, and/or edit vcf_PATH above")
+     stop("Please update vcftools to v0.1.12 or later, and/or edit vcf_PATH above and re-run this chunk")
    } else {
      message("using VCFtools v0.1.12 or higher")
 }
