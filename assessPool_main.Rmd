@@ -51,10 +51,10 @@ working_dir <- here()
 
 #install vcflib if not already done
 vcflib_PATH <- tryCatch({
-    system('vcffilter', intern=T)
-    return("")
+    system('vcffilter', intern=T, ignore.stderr=T)
+    tmp <- ""
   }, error = function(e){ 
-    vcflib_PATH <- paste(working_dir, "scripts", "vcflib", "bin", sep="/")
+    tmp <- paste(working_dir, "scripts", "vcflib", "bin", sep="/")
     
     if (!file.exists(paste(working_dir, "scripts", "vcflib",sep="/"))){
       setwd(paste(working_dir, "scripts", sep="/"))
@@ -62,7 +62,9 @@ vcflib_PATH <- tryCatch({
       system(paste("cd ", paste(working_dir, "scripts", "vcflib", sep="/"), "; make", sep=""))
       setwd(working_dir)
     } 
-    return(vcflib_PATH)
+    return(tmp)
+}, finally = function(e){
+  return(tmp)
 })
 
 ```
