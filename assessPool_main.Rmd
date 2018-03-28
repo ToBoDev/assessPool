@@ -133,7 +133,7 @@ Steps can be re-run with different parameters as needed, but if you are going fr
 stringent one, it will be necessary to start your filtering over by re-running the PreFilteringParameters step first. 
 ```{r}
 #Filter by pool number
-min.pool.number <- 1 #minimum number of pools needed for a SNP to be included (DEFAULT=1)
+min.pool.number <- 2 #minimum number of pools needed for a SNP to be included (DEFAULT=2)
 filter_df <- filter_numpools(working_dir, project_name, vcf_file, min.pool.number, filter_df, show.filter.output)
 ```
 ```{r}
