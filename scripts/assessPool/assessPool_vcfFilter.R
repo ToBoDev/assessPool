@@ -169,7 +169,7 @@ filter_qualdepth <- function(working_dir, project_name, vcf_file, x, fdf, out){
 filter_ddocent <- function(working_dir, project_name, vcf_file, fdf, out){
   setwd(working_dir)
   
-  system(paste("cut -f8", paste("filtered_",vcf_file,sep=""), "| grep -oe ","DP=[0-9]*"," | sed -s 's/DP=//g' > F5.DEPTH")) #pulls out read depth per SNP
+  system(paste("cut -f8", paste("filtered_",vcf_file,sep=""), "| grep -oe ","DP=[0-9]*"," | sed 's/DP=//g' > F5.DEPTH")) #pulls out read depth per SNP
   system(paste("mawk '!/#/'", paste("filtered_",vcf_file,sep=""), "| cut -f1,2,6 > F5.loci.qual")) #pulls out snpid (CHROM/POS) and quality score per SNP
   dp1 <- system("mawk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }' F5.DEPTH", intern=T)
   dp2 <- system(paste('python -c "print int(', dp1,'+3*(', dp1,'**0.5))"', sep=""), intern=T)
