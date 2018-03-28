@@ -18,7 +18,7 @@
 #function to write given block of text to log file
 write.log <- function(textin, fileout) {
   #if log file doesn't exist, create it
-  if file.exists(fileout){
+  if (file.exists(fileout)){
       write(textin, file=fileout, append=TRUE)
   } else{
       write(textin, file=fileout, append=FALSE)
