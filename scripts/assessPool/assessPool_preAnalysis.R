@@ -63,6 +63,13 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
     setwd(paste(working_dir, project_name, sep="/"))
     suppressWarnings(dir.create(paste(working_dir, project_name, "output", sep="/")))
     suppressWarnings(dir.create(paste(working_dir, project_name, "popoolation", sep="/")))
+    suppressWarnings(dir.create(paste(working_dir, project_name, "logs", sep="/")))
+  
+    #if filtering log exists, move it to new logs directory
+    if (file.exists("filter.log")){
+      file.copy(from="filter.log", to=paste(working_dir, project_name, "logs", "filter.log", sep="/"))
+      file.remove("filter.log")
+    }
 
     #if user did not define population names, get them from the VCF
     if (is.null(POPS)) { POPS <- samples(header(as.vcf)) }
