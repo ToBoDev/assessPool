@@ -209,7 +209,7 @@ filter_maxmeandepth <- function(working_dir, project_name, vcf_file, x, fdf, out
   #rewrite temp folder
   sink("/dev/null"); file.copy(from=paste("temp.recode.vcf",sep=""), to=paste("filtered_",vcf_file,sep=""), overwrite = TRUE); file.remove(paste("temp.recode.vcf",sep="")); sink()
   message("Wrote filtered SNPs vcf to filtered_",vcf_file)
-  system(paste("cut -f8", paste("filtered_",vcf_file,sep=""), "| grep -oe ","DP=[0-9]*"," | sed -s 's/DP=//g' > F5.DEPTH"))
+  system(paste("cut -f8", paste("filtered_",vcf_file,sep=""), "| grep -oe ","DP=[0-9]*"," | sed 's/DP=//g' > F5.DEPTH"))
   
   #Save # SNPs to filtering log
   numSNPs <- system(paste("mawk '!/#/'", paste("filtered_",vcf_file,sep=""), "| wc -l", sep=" "), intern=T)
