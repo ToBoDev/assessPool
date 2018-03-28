@@ -15,6 +15,16 @@
 #AO=ALT obs. count
 #AD=Number of each allele
 
+#function to write given block of text to log file
+write.log <- function(textin, fileout) {
+  #if log file doesn't exist, create it
+  if file.exists(fileout){
+      write(textin, file=fileout, append=TRUE)
+  } else{
+      write(textin, file=fileout, append=FALSE)
+  }    
+}
+
 #given a variable, pulls a subset out of saved vcf and returns it
 subset.per.pool <- function(depth_var, as.vcf, POPS) {
   depth.tmp <- character()
