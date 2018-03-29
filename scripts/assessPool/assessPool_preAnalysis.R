@@ -18,7 +18,7 @@
 #function to write given block of text to log file
 write.log <- function(textin, fileout) {
   #if log file doesn't exist, create it
-  if file.exists(fileout){
+  if (file.exists(fileout)){
       write(textin, file=fileout, append=TRUE)
   } else{
       write(textin, file=fileout, append=FALSE)
@@ -80,6 +80,11 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
       file.copy(from="filter.log", to=paste(working_dir, project_name, "logs", "filter.log", sep="/"))
       file.remove("filter.log")
     }
+    
+    #set up new logfiles
+    write.log(paste(project_name, Sys.time()), paste(working_dir, project_name, "logs/setup.log", sep="/"))
+    write.log(paste(project_name, Sys.time()), paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
+    write.log(paste(project_name, Sys.time()), paste(working_dir, project_name, "logs/analysis.log", sep="/"))
 
     #if user did not define population names, get them from the VCF
     if (is.null(POPS)) { POPS <- samples(header(as.vcf)) }

@@ -57,7 +57,7 @@ vcflib_PATH <- tryCatch({
     system('vcffilter', intern=T, ignore.stderr=T)
     tmp <- ""
   }, error = function(e){ 
-    tmp <- paste(working_dir, "scripts", "vcflib", "bin", sep="/")
+    tmp <- paste(working_dir, "scripts", "vcflib", "bin/", sep="/")
     
     if (!file.exists(paste(working_dir, "scripts", "vcflib",sep="/"))){
       setwd(paste(working_dir, "scripts", sep="/"))
@@ -83,7 +83,7 @@ If desired, set project name, paths to input files, and basic filter parameters 
 #set your project name - this will create a directory where output files are stored
 #NOTE - it is very important to change this if you are starting a new analysis
 #Otherwise it will overwrite your old one 
-project_name <- "test_new"
+project_name <- "my_project"
 
 #finds input files (VCF and reference fasta)
 #NOTE: if your files are in a different directory, or if you have multiple vcf/ref files,
@@ -133,7 +133,7 @@ Steps can be re-run with different parameters as needed, but if you are going fr
 stringent one, it will be necessary to start your filtering over by re-running the PreFilteringParameters step first. 
 ```{r}
 #Filter by pool number
-min.pool.number <- 1 #minimum number of pools needed for a SNP to be included (DEFAULT=1)
+min.pool.number <- 2 #minimum number of pools needed for a SNP to be included (DEFAULT=2)
 filter_df <- filter_numpools(working_dir, project_name, vcf_file, min.pool.number, filter_df, show.filter.output)
 ```
 ```{r}
@@ -178,7 +178,7 @@ ggplot(data=depths) + geom_histogram(aes(x=depths$V1/max.missing), binwidth=10) 
 ```
 ```{r}
 #Filter by maximum mean depth
-max.mean.depth.threshold <- 400 #helps remove paralogs and multicopy loci
+max.mean.depth.threshold <- 300 #helps remove paralogs and multicopy loci
 filter_df <- filter_maxmeandepth(working_dir, project_name, vcf_file, max.mean.depth.threshold, filter_df, show.filter.output)
 #try re-running the histogram above to see changes
 ```
@@ -188,8 +188,9 @@ Summary of # SNPs retained after each individual filtering step.
 ```{r}
 #Number of SNPs kept after each filter applied
 filter_df$Filter_f <- factor(filter_df$Filter, levels=unique(filter_df$Filter))
-ggplot(data=filter_df) + geom_bar(aes(x=Filter_f, y=SNPs), stat="identity") + theme_bw() + theme(axis.text.x = element_text(angle = -70, hjust=-0.1), plot.title = element_text(hjust = 0.5)) + ggtitle("Number of SNPs after each filter") + xlab("\nFilter") + ylab("\n# SNPs")
-filter_df$Filter_f <- NULL
+filter_df$SNPs_f <- as.numeric(as.character(filter_df$SNPs)); options(scipen = 999)
+ggplot(data=filter_df) + geom_bar(aes(x=Filter_f, y=SNPs_f), stat="identity") + theme_bw() + theme(axis.text.x = element_text(angle = -70, hjust=-0.1), plot.title = element_text(hjust = 0.5)) + ggtitle("Number of SNPs after each filter") + xlab("\nFilter") + ylab("\n# SNPs")
+filter_df$Filter_f <- NULL; filter_df$SNPs_f <- NULL
 ```
 
 ### Run Pre-Analysis Setup
@@ -307,7 +308,7 @@ Runs PoPoolation2 to generate FST/FET values, using the .sync files and run scri
 ```{r PopoolationRun, warning=FALSE}
 
 #parallel options
-use_parallel <- TRUE #set to FALSE if not using GNU parallel
+use_parallel <- FALSE #set to FALSE if not using GNU parallel
 no_cores <- 20 #number of cores to use for analysis (try not to use max)
 
 runPopoolation(use_parallel=use_parallel, 

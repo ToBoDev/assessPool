@@ -7,6 +7,12 @@ getFasta <- function(df, ref){
 postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_cutoff, fasta_generation, ref_file, first_mincov, last_mincov, cov_step){
 
     setwd(paste(working_dir,"/",project_name,"/popoolation", sep=""))
+  
+    #add parameters to logfile
+    write.log("Analysis Parameters:", paste(working_dir, project_name, "logs/analysis.log", sep="/"))
+    write.log(paste("Strongly differentiated FST >=",strong_diff), paste(working_dir, project_name, "logs/analysis.log", sep="/"))
+    write.log(paste("Significant FET <=", p_cutoff), paste(working_dir, project_name, "logs/analysis.log", sep="/"))
+  
     C <- ncol(popcomb) #number of combinations
     combs <- list() #empty list for pairwise tags
     for(i in 1:C) combs[i] <- paste(project_name, popcomb[1,i], popcomb[2,i], sep='_') #pairwise tags
@@ -50,7 +56,8 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
     #count number of populations in which a SNP is not called; should not be any NAs but to double check
     postpop.master.wide$fstNAs <- apply(postpop.master.wide[,grep(filetype[1],names(postpop.master.wide))], 1, function(x) sum(is.na(x)))
     postpop.master.wide <- postpop.master.wide[!(postpop.master.wide$fstNAs >= C),] # remove rows without SNPS called in any pair (i.e. those that did not pass through filters)
-    message(paste(nrow(postpop.master.wide), "informative variable sites retained after PoPoolation2."))
+    m <- paste(nrow(postpop.master.wide), "informative variable sites retained after PoPoolation2.")
+    message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     
     #apply same filters to data stored in long format
     snpids_filter <- data.frame("snpid"=postpop.master.wide$snpid)
@@ -66,16 +73,19 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
     #export all variable sites
     popl.mast.export <- data.frame(lapply(postpop.master.wide, as.character), stringsAsFactors=FALSE)
     write.csv(popl.mast.export, paste(working_dir,"/", project_name, "/output/", project_name,"_allvar_postPopoolation2.csv", sep=""), row.names=FALSE)
-    message(paste("Exported all variable sites to ","output/", project_name,"_allvar_postPopoolation2.csv", sep=""))
+    m <- paste("Exported all variable sites to ","output/", project_name,"_allvar_postPopoolation2.csv", sep="")
+    message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     
     #Test how many SNPs are called in all populations
     called_allpops <- postpop.master.wide[postpop.master.wide$fstNAs==0,] 
-    message(paste(nrow(called_allpops), "SNPs called in all pools."))
+    m <- paste(nrow(called_allpops), "SNPs called in all pools.")
+    message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     
     #export sites called in all populations
     popl.allpops.exports <- data.frame(lapply(called_allpops, as.character), stringsAsFactors=FALSE)
     write.csv(popl.mast.export, paste(working_dir,"/", project_name,"/output/", project_name, "_calledAllPools_postPopoolation2.csv", sep=""), row.names=FALSE)
-    message(paste("Exported variable sites called in all pools to ","output/", project_name,"_calledAllPools_postPopoolation2.csv", sep=""))
+    m <- paste("Exported variable sites called in all pools to ","output/", project_name,"_calledAllPools_postPopoolation2.csv", sep="")
+    message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     
     if (".fst" %in% filetype){
       
@@ -83,17 +93,23 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
       postpop.master.wide$DiffFST <- apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) any(x >= strong_diff))
       popl.appfx <- postpop.master.wide[which(postpop.master.wide$DiffFST==TRUE),]
       #popl.appfx <- na.omit(postpop.master.wide[apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) any(x >= strong_diff)),])
-      message(paste(c(nrow(popl.appfx), " SNPs are strongly differentiated (FST>=", strong_diff, ") in at least one comparison."), sep=""))
+      m <- paste(nrow(popl.appfx), " SNPs are strongly differentiated (FST>=", strong_diff, ") in at least one comparison.", sep="")
+      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
+      
       write.csv(popl.appfx, paste(working_dir,"/", project_name,"/output/", project_name, "_strongly_differentiated_sites.csv", sep=""), row.names=FALSE)
-      message(paste("Exported strongly differentiated sites to ","output/", project_name,"_strongly_differentiated_sites.csv", sep=""))
+      m <- paste("Exported strongly differentiated sites to ","output/", project_name,"_strongly_differentiated_sites.csv", sep="")
+      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
       #extract alternatively fixed sites 
       postpop.master.wide$FixedFST <- apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) any(x == 1.0))
       popl.fixed <- postpop.master.wide[which(postpop.master.wide$FixedFST==TRUE),]
       #popl.fixed <- na.omit(postpop.master.wide[apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) any(x == 1.0)),])
-      message(paste(nrow(popl.fixed), "sites are alternatively fixed (FST=1) in an least one comparison."))
+      m <- paste(nrow(popl.fixed), "sites are alternatively fixed (FST=1) in an least one comparison.")
+      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
+      
       write.csv(popl.fixed, paste(working_dir,"/", project_name,"/output/", project_name, "_fixed_snps.csv", sep=""), row.names=FALSE)
-      message(paste("Exported alternatively fixed sites to ","output/", project_name,"_fixed_snps.csv", sep=""))
+      m <- paste("Exported alternatively fixed sites to ","output/", project_name,"_fixed_snps.csv", sep="")
+      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
       if (fasta_generation==TRUE){
         ref_file_df <- read.fasta(paste(working_dir, ref_file, sep="/"))
@@ -102,12 +118,14 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
         #generate FASTA from strongly differentiated sites
         sd_fasta <- getFasta(popl.appfx, ref_file_df)
         write.fasta(sequences=as.list(sd_fasta$Seq), names=sd_fasta$CHROM, file.out=paste(working_dir,"/", project_name,"/output/", project_name, "_strongly_differentiated_sites_fasta.fa", sep=""), nbchar=1000)
-        message(paste("Wrote ", nrow(sd_fasta), " contigs to /output/", project_name, "_strongly_differentiated_sites_fasta.fa", sep=""))
+        m <- paste("Wrote ", nrow(sd_fasta), " contigs to /output/", project_name, "_strongly_differentiated_sites_fasta.fa", sep="")
+        message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
         
         #generate FASTA from alternatively fixed sites
         alt_fasta <- getFasta(popl.fixed, ref_file_df)
         write.fasta(sequences=as.list(alt_fasta$Seq), names=alt_fasta$CHROM, file.out=paste(working_dir,"/", project_name,"/output/", project_name, "_fixed_sites_fasta.fa", sep=""), nbchar=1000)
-        message(paste("Wrote ", nrow(alt_fasta), " contigs to /output/", project_name, "_fixed_sites_fasta.fa", sep=""))
+        m <- paste("Wrote ", nrow(alt_fasta), " contigs to /output/", project_name, "_fixed_sites_fasta.fa", sep="")
+        message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       }
     }
     
@@ -115,9 +133,12 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
       postpop.master.wide$LowP <- apply(postpop.master.wide[,grep(".fet", names(postpop.master.wide))], 1, function(x) any(x <= p_cutoff))
       popl.lowP <- postpop.master.wide[which(postpop.master.wide$LowP==TRUE),]
       #popl.fixed <- na.omit(postpop.master.wide[apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) any(x == 1.0)),])
-      message(paste(c(nrow(popl.lowP), " SNPs have a low p-value (p<=", p_cutoff, ") in at least one comparison."), sep=""))
+      m <- paste(nrow(popl.lowP), " SNPs have a low p-value (p<=", p_cutoff, ") in at least one comparison.", sep="")
+      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
+      
       write.csv(popl.lowP, paste(working_dir,"/", project_name,"/output/", project_name, "_lowP_snps.csv", sep=""), row.names=FALSE)
-      message(paste("Exported low p-value sites to ","output/", project_name,"_lowP_snps.csv", sep=""))
+      m <- paste("Exported low p-value sites to ","output/", project_name,"_lowP_snps.csv", sep="")
+      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     }
     
     ###############add min coverage level to dataframe
@@ -136,7 +157,8 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
       d <- postpop.master.wide[apply(postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))], 1, function(x) all(x >= covs[i])),]
       d$MinCoverage <- covs[i]; assign(df_name, d)
       df_names_total[df_index] <- paste(df_name); df_index <- df_index+1
-      message(paste(nrow(d)," SNPs at ",covs[i],"x coverage.", sep=""))
+      m <- paste(nrow(d)," SNPs at ",covs[i],"x coverage.", sep="")
+      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     }
     
     #append dataframes to build master dataframes (wide and long) by coverage

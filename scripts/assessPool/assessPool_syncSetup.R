@@ -32,7 +32,8 @@ syncSetup <-function(project_name, as.st, POPS, popcomb, include.multiallelic, i
       as.sync.st <- as.snp
     }
     
-    message(paste(c("Found ", length(unique(as.snp$snpid)), " biallelic SNPs."), sep=""))
+    m <- paste("Found ", length(unique(as.snp$snpid)), " biallelic SNPs.", sep="")
+    message(m); write.log(paste(m,"\n"), paste(working_dir, project_name, "logs/setup.log", sep="/"))
     
     #######################Multiallelic SNPS####################################
     extract.allele.ma.columns <- function(dataframe, allele_list){
@@ -79,7 +80,9 @@ syncSetup <-function(project_name, as.st, POPS, popcomb, include.multiallelic, i
       as.sync.st <- rbind(as.sync.st, as.mst.merge)
     }
   
-    message(paste(c("Found ", length(unique(as.mst$snpid)), " multiallelic SNPs."), sep=""))
+    m <- paste("Found ", length(unique(as.mst$snpid)), " multiallelic SNPs.", sep="")
+    message(m); write.log(paste(m,"\n"), paste(working_dir, project_name, "logs/setup.log", sep="/"))
+    
     
     #Popoolation's SYNC format does not have a call for Insertions - so we need to code them as Deletions.
     #So the ALT becomes the REF and then its a DELETION
@@ -107,7 +110,8 @@ syncSetup <-function(project_name, as.st, POPS, popcomb, include.multiallelic, i
       
     }
     
-    message(paste(c("Found ", length(unique(as.del$snpid)), " single-base deletions."), sep=""))
+    m <- paste("Found ", length(unique(as.del$snpid)), " single-base deletions.", sep="")
+    message(m); write.log(paste(m,"\n"), paste(working_dir, project_name, "logs/setup.log", sep="/"))
     
     #######################Insertions####################################
     as.ins <- as.st[which(as.st$TYPE=="ins" & as.st$INS.len<=1),] #restrict to single base insertions
@@ -131,7 +135,8 @@ syncSetup <-function(project_name, as.st, POPS, popcomb, include.multiallelic, i
       as.sync.st <- rbind(as.sync.st, as.ins.merge)
     }
     
-    message(paste(c("Found ", length(unique(as.ins$snpid)), " single-base insertions."), sep=""))
+    m <- paste("Found ", length(unique(as.ins$snpid)), " single-base insertions.", sep="")
+    message(m); write.log(paste(m,"\n"), paste(working_dir, project_name, "logs/setup.log", sep="/"))
     
     ###########################################################
     
@@ -146,38 +151,44 @@ syncSetup <-function(project_name, as.st, POPS, popcomb, include.multiallelic, i
     #Export All Variable Sites
     as.sync.export <- as.sync[,-which(names(as.sync) %in% c("snpid","Rlen","TYPE"))]
     write.table(as.sync.export,paste(working_dir, "/", project_name, "/output/", project_name, "_", length(POPS),"pools_allvar.txt",sep=""),sep="\t",row.names=F, col.names=T, quote=F)
-    message(paste(c("Exported all variable sites to output/", project_name, "_", length(POPS),"pools_allvar.txt"), sep=""))
+    m <- paste("Exported all variable sites to output/", project_name, "_", length(POPS),"pools_allvar.txt", sep="")
+    message(m); write.log(paste(m,"\n"), paste(working_dir, project_name, "logs/setup.log", sep="/"))
     
     #Export All SNPs
     as.sync.snps <- as.sync[which(as.sync$TYPE=="bi-snp" | as.sync$TYPE=="tri-snp" | as.sync$TYPE=="quad-snp"),-which(names(as.sync) %in% c("snpid","Rlen","TYPE"))]
     write.table(as.sync.export,paste(working_dir, "/", project_name, "/output/", project_name, "_", length(POPS),"pools_allsnps.txt", sep=""),sep="\t",row.names=F, col.names=T, quote=F)
-    message(paste(c("Exported all SNPs to output/", project_name, "_", length(POPS),"pools_allsnps.txt"), sep=""))
+    m <- paste("Exported all SNPs to output/", project_name, "_", length(POPS),"pools_allsnps.txt", sep="")
+    message(m); write.log(paste(m,"\n"), paste(working_dir, project_name, "logs/setup.log", sep="/"))
     
     #Exports only biallelic SNPs
     as.sync.bsnps <- as.sync[which(as.sync$TYPE=="bi-snp"),-which(names(as.sync) %in% c("snpid","Rlen","TYPE"))]
     write.table(as.sync.export,paste(working_dir, "/", project_name, "/output/", project_name, "_", length(POPS),"pools_bisnps.txt", sep=""),sep="\t",row.names=F, col.names=T, quote=F)
-    message(paste(c("Exported all bi-SNPs to output/", project_name, "_", length(POPS),"pools_bisnps.txt"), sep=""))
+    m <- paste("Exported all bi-SNPs to output/", project_name, "_", length(POPS),"pools_bisnps.txt", sep="")
+    message(m); write.log(paste(m,"\n"), paste(working_dir, project_name, "logs/setup.log", sep="/"))
     
     #Export INDELS and add TDP to as.indels
     #as.sync.indelsnps <- as.sync[which(as.sync$TYPE=="del" | as.sync$TYPE=="ins" | as.sync$TYPE=="bi-snp"),-which(names(as.sync) %in% c("snpid","Rlen","TYPE"))]
     as.indels <- as.sync[which(as.sync$TYPE=="del" | as.sync$TYPE=="ins"),]
     as.indels <- merge(as.indels, as[,which(names(as) %in% c("TDP","snpid"))], by="snpid", all.x=TRUE, all.y=FALSE )
     write.table(as.indels, paste(working_dir, "/", project_name, "/output/", project_name, "_", length(POPS),"pools_allindels.txt", sep=""), sep="\t",row.names=F, col.names=T, quote=F)
-    message(paste(c("Exported all INDELs to output/", project_name, "_", length(POPS),"pools_allindels.txt"), sep=""))
+    m <- paste("Exported all INDELs to output/", project_name, "_", length(POPS),"pools_allindels.txt", sep="")
+    message(m); write.log(paste(m,"\n"), paste(working_dir, project_name, "logs/setup.log", sep="/"))
     
     if (include.multiallelic & !include.indels) { 
       vcf2popool_sync_out <- as.sync.snps #include multiallelic but not indels
-      message(paste(c("Writing ",ncol(popcomb)," pairwise .sync files containing all SNPs.\n"), sep=""))
+      m <- paste("Writing ",ncol(popcomb)," pairwise .sync files containing all SNPs.\n", sep="")
     } else if (include.indels & !include.multiallelic) {
       vcf2popool_sync_out <- as.sync.indelsnps #include indels but not multiallelic
-      message(paste(c("Writing ",ncol(popcomb)," pairwise .sync files containing biallelic SNPs and indels.\n"), sep=""))
+      m <- paste("Writing ",ncol(popcomb)," pairwise .sync files containing biallelic SNPs and indels.\n", sep="")
     } else if (!include.indels & !include.multiallelic) {
       vcf2popool_sync_out <- as.sync.bsnps #only include biallelic snps
-      message(paste(c("Writing ",ncol(popcomb)," pairwise .sync files containing biallelic SNPs.\n"), sep=""))
+      m <- paste("Writing ",ncol(popcomb)," pairwise .sync files containing biallelic SNPs.\n", sep="")
     } else {
       vcf2popool_sync_out <- as.sync.export #include all variable sites
-      message(paste(c("Writing ",ncol(popcomb)," pairwise .sync files containing all variable sites.\n"), sep=""))
+      m <- paste("Writing ",ncol(popcomb)," pairwise .sync files containing all variable sites.\n", sep="")
     }
+    
+    message(m); write.log(m, paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
     
     rm(list=ls(pattern="*as.")[-which(ls(pattern="*as.")=="as.st")])
     colnames(vcf2popool_sync_out) <- c("CHROM","POS", "REF", POPS)
@@ -200,6 +211,16 @@ syncSetup <-function(project_name, as.st, POPS, popcomb, include.multiallelic, i
     step_size <- paste("--step-size", as.character(step_size))
     pool_size <- paste("--pool-size", as.character(pool_size))
     
+    #write parameters to logfile
+    write.log("PoPoolation2 Parameters:", paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
+    write.log(min_count, paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
+    write.log(min_cov, paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
+    write.log(max_cov, paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
+    write.log(min_covered_fract, paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
+    write.log(window_size, paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
+    write.log(step_size, paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
+    write.log(pool_size, paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
+    
     write("\n", file="popool2_run.sh", append= F)
     
     if (perform_snpfreq) {
@@ -207,6 +228,7 @@ syncSetup <-function(project_name, as.st, POPS, popcomb, include.multiallelic, i
         write(paste('perl', paste(pop_path, test[1],sep=''), "--input", paste(project_name, '_', popcomb[1,i], '_', popcomb[2,i], '.sync', sep=""), "--output-prefix", paste(project_name, '_', popcomb[1,i], '_', popcomb[2,i], sep=""), min_count, min_cov, max_cov,  sep=" "), file="popool2_run.sh", append = T)
       }
       write(paste("\n", paste(replicate(100, "#"), collapse=''),"\n"), file="popool2_run.sh", append = T)
+      write.log("Performing SNP frequency runs on SYNC files", paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
     }
     
     #FST scripts
@@ -215,6 +237,7 @@ syncSetup <-function(project_name, as.st, POPS, popcomb, include.multiallelic, i
         write(paste('perl', paste(pop_path, test[2],sep=''), "--input", paste(project_name, '_', popcomb[1,i], '_', popcomb[2,i], '.sync', sep=""), "--output", paste(project_name, '_', popcomb[1,i], '_', popcomb[2,i], '.fst', sep=""), "--suppress-noninformative", min_count, min_cov, max_cov, min_covered_fract, window_size, step_size, pool_size,  sep=" "), file="popool2_run.sh", append = T)
       }
       write(paste("\n",paste(replicate(100, "#"), collapse=''),"\n"), file="popool2_run.sh", append = T)
+      write.log("Performing FST runs on SYNC files", paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
     }
     
     #FET scripts 
@@ -223,6 +246,7 @@ syncSetup <-function(project_name, as.st, POPS, popcomb, include.multiallelic, i
         write(paste('perl', paste(pop_path, test[3],sep=''), "--input", paste(project_name, '_', popcomb[1,i], '_', popcomb[2,i], '.sync', sep=""), "--output", paste(project_name, '_', popcomb[1,i], '_', popcomb[2,i], '.fet', sep=""), "--suppress-noninformative", min_count, min_cov, max_cov,  sep=" "),  file="popool2_run.sh", append = T)
       }
       write(paste("\n",paste(replicate(100, "#"), collapse=''),"\n"), file="popool2_run.sh", append = T)
+      write.log("Performing FET runs on SYNC files", paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
     }
     
 }
