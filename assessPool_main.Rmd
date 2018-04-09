@@ -46,6 +46,7 @@ source("scripts/assessPool/assessPool_syncSetup.R")
 source("scripts/assessPool/assessPool_runPopoolation.R")
 source("scripts/assessPool/assessPool_postPopoolation.R")
 source("scripts/assessPool/assessPool_poolHeatmaps.R")
+source("scripts/assessPool/assessPool_visualizations.R")
 system("chmod +x scripts/filtering/ErrorCount.sh")
 
 #set working directory
@@ -394,25 +395,10 @@ if (length(list.files(pattern=".fst"))==0 & length(list.files(pattern=".fet"))==
 
 ```
 
-### Summary Visualization By Coverage, all sites
-Number of SNPs, Number of Contigs, Mean # SNPs per contigs, Mean FST, SD FST for all sites
-```{r SummaryAllSites}
-ggplotly(ggplot(cov.allpairs.table.total, aes(x=MinCoverage, y=NumSNPs)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("# SNPs") + ggtitle("# SNPs by coverage") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.allpairs.table.total, aes(x=MinCoverage, y=NumContigs)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("# Contigs") + ggtitle("# Contigs by coverage") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.allpairs.table.total, aes(x=MinCoverage, y=MeanSNPsPerContig)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Mean # SNPs / Contig") + ggtitle("SNP density") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.allpairs.table.total, aes(x=MinCoverage, y=MeanFST)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Average mean FST") + ggtitle("Mean FST by coverage") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.allpairs.table.total, aes(x=MinCoverage, y=SdFST)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Average standard deviation FST") + ggtitle("SD FST by coverage") + theme(plot.title = element_text(hjust = 0.5)))
-```
-
-
-### Summary Visualization By Coverage, sites called in all pools
-Number of SNPs, Number of Contigs, Mean # SNPs per contigs, Mean FST, SD FST for all sites
-```{r SummaryAllPools}
-ggplotly(ggplot(cov.allpairs.table.allpools, aes(x=MinCoverage, y=NumSNPs)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("# SNPs") + ggtitle("# SNPs by coverage") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.allpairs.table.allpools, aes(x=MinCoverage, y=NumContigs)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("# Contigs") + ggtitle("# Contigs by coverage") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.allpairs.table.allpools, aes(x=MinCoverage, y=MeanSNPsPerContig)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Mean # SNPs / Contig") + ggtitle("SNP density") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.allpairs.table.allpools, aes(x=MinCoverage, y=MeanFST)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Average mean FST") + ggtitle("Mean FST by coverage") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.allpairs.table.allpools, aes(x=MinCoverage, y=SdFST)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Average standard deviation FST") + ggtitle("SD FST by coverage") + theme(plot.title = element_text(hjust = 0.5)))
+### Summary Visualization By Coverage, sites called in all sites and in all pools
+Number of SNPs, Number of Contigs, Mean # SNPs per contigs, Mean FST, SD FST for all sites (total) and all sites
+```{r SummaryAllPools, Summary AllSites}
+allpairs_summary_plot(cov.allpairs.table.total = cov.allpairs.table.total, cov.allpairs.table.allpools = cov.allpairs.table.allpools)
 ```
 
 ### Summary visualization by coverage and comparison, all sites
