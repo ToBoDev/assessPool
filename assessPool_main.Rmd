@@ -124,6 +124,7 @@ if(grepl("0.1.11", version)) {
      message("using VCFtools v0.1.12 or higher")
 }
 
+vcftools_path_export <- paste("export PATH=", vcftools_path_export, ":$PATH;", sep = "")
 
 filter_df <- vcf_init(vcf_file, working_dir, show.filter.output)
 ```
