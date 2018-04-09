@@ -116,7 +116,7 @@ show.filter.output <- TRUE #set to FALSE if you want to suppress verbose output
 #vcf_PATH <- " export PATH=/home/evan/miniconda2/bin/:$PATH;"
 
 #determine vcftools version
-version <-system(paste(vcftools_path_export,'vcftools'), intern=T)[2]
+version <-system(paste(vcftools_path_export,'vcftools', sep=""), intern=T)[2]
 if(grepl("0.1.11", version)) {
      assign("vcftools_path_export",vcftools_PATH)
      stop("Please update vcftools to v0.1.12 or later, and/or edit vcf_PATH above and re-run this chunk")
