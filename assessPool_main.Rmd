@@ -51,7 +51,6 @@ system("chmod +x scripts/filtering/ErrorCount.sh")
 
 #set working directory
 working_dir <- here()
-vcftools_path_export <- ""
 
 #install vcflib if not already done
 vcflib_PATH <- tryCatch({
