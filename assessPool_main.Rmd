@@ -19,13 +19,13 @@ packrat::on() #initializes packrat library
 #library(BiocInstaller)
 #biocLite("VariantAnnotation") #to install/upclte packages
 #biocLite("GenomicFeatures"); biocLite("ShortRead"); biocLite("Biostrings"); biocLite("Rsamtools")
+library(stringi) 
 library(R.utils)
 #detach("package:VariantAnnotation", unload=TRUE)
 library(VariantAnnotation)
 library(GenomicFeatures)
 library(seqminer)  #library(vcf2geno) replaced by seqminer
 library(RJSONIO)
-library(stringi) 
 #library(Rplinkseq) #not installed yet
 library(reshape2) 
 library(dataframes2xls)
