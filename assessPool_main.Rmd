@@ -109,10 +109,10 @@ If you wish to start over with your filtering at any time, simply re-run the Pre
 
 show.filter.output <- TRUE #set to FALSE if you want to suppress verbose output
 
-#Path to vcftools v0.1.12 or higher - edit if warned below
-#vcftools_PATH <- "export PATH=<PATH_TO_VCFTOOLS_0.1.12_or_later>:$PATH;"
+#Path to vcftools v0.1.12 or higher - edit if warned below, then re-run code chunk
+vcftools_PATH <- "export PATH=<PATH_TO_VCFTOOLS_0.1.12_or_later>:$PATH;"
 #example:
-#vcf_PATH <- " export PATH=/home/evan/miniconda2/bin/:$PATH;"
+#vcftools_PATH <- " export PATH=/home/evan/miniconda2/bin/:$PATH;"
 
 #determine vcftools version
 version <-system(paste(vcftools_path_export,'vcftools', sep=""), intern=T)[2]
