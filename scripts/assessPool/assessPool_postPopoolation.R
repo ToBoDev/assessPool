@@ -185,13 +185,10 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
       if (length(tmp.idx>0)){
         tmp.postpop <- tmp.postpop[-tmp.idx,]
       }
-      message("removed indices")
-      bool.out <- pbapply(tmp.postpop[,c("popIncl", names(tmp.postpop)[grep("DP\\.", names(tmp.postpop))])], 1, function(x) popNACheck(x, covs[i]))
+      bool.out <- apply(tmp.postpop[,c("popIncl", names(tmp.postpop)[grep("DP\\.", names(tmp.postpop))])], 1, function(x) popNACheck(x, covs[i]))
       tmp.idx <- as.numeric(which(bool.out))
-      message("NA check")
       tmp.d <- tmp.postpop[tmp.idx,]
       tmp.d <- tmp.d[,-grep("DP\\.", names(tmp.d))]
-      message("removed columns")
 
       if (nrow(tmp.d)>0){
         if (nrow(d)>0){
