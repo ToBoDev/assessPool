@@ -3,9 +3,23 @@ getFasta <- function(df, ref){
   return(merge(df, ref, by="CHROM", all.x=T, all.y=F))
 }
 
+getPopNames <- function(popsin){
+  popsin <- lapply(unique(unlist(lapply(popsin, function(x) strsplit(x=gsub(paste(project_name,"_", sep=""), "", gsub(".fst", "", x)), split="_")), use.names = FALSE)), function(x) paste("DP", x, sep="."))
+  return(popsin)
+}
+
+popNACheck <- function(row.in, tmp.cov){
+  tmp.pops <- unlist(row.in["popIncl"], use.names=FALSE)
+  tmp.inds <- row.in[names(row.in) %in% tmp.pops]
+  bool.out <- all(na.omit(tmp.inds) >= tmp.cov)
+  return(bool.out)
+}
+
 #define new sumlog function to deal with NAs and zeros 
 postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_cutoff, fasta_generation, ref_file, first_mincov, last_mincov, cov_step){
 
+    file.copy(from=vcf_file, to=paste(working_dir,project_name,vcf_file, sep="/"), overwrite = TRUE)
+    file.copy(from=ref_file, to=paste(working_dir,project_name,ref_file, sep="/"), overwrite = TRUE)  
     setwd(paste(working_dir,"/",project_name,"/popoolation", sep=""))
   
     #add parameters to logfile
@@ -23,10 +37,10 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
       for(i in 1:C){
         f=paste(combs[i], ft,sep=''); assign(f, read.table(f, sep='\t')) #read in dataframe
         d=get(f) #get dataframe object
-        colnames(d)[c(1,6)]=c("CHROM","value"); d$pair <- combs[i]; d$analysis <- ft #reorganize columns
+        colnames(d)[c(1,2,6)]=c("CHROM","value"); d$pair <- combs[i]; d$analysis <- ft #reorganize columns
         d$value <- as.numeric(gsub(".*=","",as.character(d$value))) #remove unwanted characters, convert to numeric
         d$snpid <- paste(d[,1], d[,2], sep = '_') #add snpid column
-        d <- d[,c(1,6:9)] #drop unneeded columns
+        d <- d[,c(1:2,6:9)] #drop unneeded columns
         if (ft==".fet"){ d$value <- 10^(-(d$value)) } #convert log(p) to p-value
         assign(f,d)
         df_names[df_index] <- paste(combs[i],ft,sep=""); df_index <- df_index+1
@@ -35,7 +49,8 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
     
     #save dataframe in long format for future data manipulation
     postpop.master.long <- bind_rows(mget(unlist(df_names)))
-    
+    for(ft in filetype) rm(list=ls(pattern=paste("*.",ft,sep=''))); rm(d)  
+  
     #convert to wide format for export
     postpop.master.tmp <- postpop.master.long
     postpop.master.tmp$tag <- paste(postpop.master.tmp$pair, postpop.master.tmp$analysis,sep="")
@@ -52,6 +67,10 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
       postpop.master.wide$fst0s <- apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) length(which(x==0)))  #counts instances of Fst=0
       postpop.master.wide <- postpop.master.wide[which(postpop.master.wide$fst0s < C),]; postpop.master.wide$fst0s <- NULL
     }
+                                         
+    #keep track of which populations have a SNP at this position (slow...)
+    postpop.master.wide$popIncl <- apply(postpop.master.wide[,grep(filetype[1],names(postpop.master.wide))], 1, function(x) names(postpop.master.wide[,grep(filetype[1],names(postpop.master.wide))])[which(!is.na(x))])
+    postpop.master.wide$popIncl <- apply(postpop.master.wide[,"popIncl",drop=F], 1, getPopNames)
     
     #count number of populations in which a SNP is not called; should not be any NAs but to double check
     postpop.master.wide$fstNAs <- apply(postpop.master.wide[,grep(filetype[1],names(postpop.master.wide))], 1, function(x) sum(is.na(x)))
@@ -64,7 +83,6 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
     postpop.master.long <- merge(postpop.master.long, snpids_filter, all=FALSE)
     
     #clean up environment and organize data
-    for(ft in filetype) rm(list=ls(pattern=paste("*.",ft,sep=''))); rm(d); rm(snpids_filter)
     postpop.master.wide$TYPE <- as.factor(postpop.master.wide$TYPE); postpop.master.long$CHROM <- as.factor(postpop.master.long$CHROM)
     postpop.master.wide <- arrange(postpop.master.wide, CHROM, POS) #sort by CHROM/POS
     
@@ -143,7 +161,7 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
     
     ###############add min coverage level to dataframe
     
-    covs <- c(seq(first_mincov,last_mincov,cov_step)) #min to max by step
+    covs <- rev(c(seq(first_mincov,last_mincov,cov_step))) 
     #convert to numeric and replace NAs with 0
     #postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))] <- apply(postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))], 1, as.character)
     #postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))] <- apply(postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))], 1, as.numeric)
@@ -152,13 +170,61 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
     
     message("")
     #assign min in-population coverage levels to SNPs
+
+    tmp.idx <- c() #initialize list to keep track of rows already analyzed
+    d <- data.frame()
+    tmp.postpop <- postpop.master.wide[,-grep("RO\\.|AO\\.", names(postpop.master.wide))]
+    tmp.postpop <- tmp.postpop[,-which(names(tmp.postpop) %in% c("CHROM","POS","NS","TDP","TYPE","AN","REF","ALT","Rlen","Alen"))]
+    #remove uneeded columns
+    rm(postpop.master.wide) #no longer needed
+    gc()
+
+    #get SNPs at each minimum coverage level
     for(i in 1:length(covs)){
       df_name <- paste("popl.master.", covs[i],"x", sep="")
-      d <- postpop.master.wide[apply(postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))], 1, function(x) all(x >= covs[i])),]
-      d$MinCoverage <- covs[i]; assign(df_name, d)
-      df_names_total[df_index] <- paste(df_name); df_index <- df_index+1
-      m <- paste(nrow(d)," SNPs at ",covs[i],"x coverage.", sep="")
-      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
+      if (length(tmp.idx>0)){
+        tmp.postpop <- tmp.postpop[-tmp.idx,]
+      }
+      message("removed indices")
+      bool.out <- pbapply(tmp.postpop[,c("popIncl", names(tmp.postpop)[grep("DP\\.", names(tmp.postpop))])], 1, function(x) popNACheck(x, covs[i]))
+      tmp.idx <- as.numeric(which(bool.out))
+      message("NA check")
+      tmp.d <- tmp.postpop[tmp.idx,]
+      tmp.d <- tmp.d[,-grep("DP\\.", names(tmp.d))]
+      message("removed columns")
+
+      if (nrow(tmp.d)>0){
+        if (nrow(d)>0){
+          #new SNPs and old SNPs
+          #add from previous step
+          d$MinCoverage <- covs[i]
+          tmp.d$MinCoverage <- covs[i]
+          d <- rbind(d, tmp.d); rm(tmp.d)
+        } else{
+          #new SNPs but no old SNPs
+          tmp.d$MinCoverage <- covs[i]
+          d <- tmp.d; rm(tmp.d)
+        }
+
+        #save new dataframe
+        assign(df_name, d)
+        df_names_total[df_index] <- paste(df_name); df_index <- df_index+1
+        message(paste(nrow(d)," SNPs at ",covs[i],"x coverage.", sep=""))
+
+      } else{
+        if (nrow(d)>0){
+          #old SNPs but no new SNPs
+          d$MinCoverage <- covs[i]
+          assign(df_name, d)
+          df_names_total[df_index] <- paste(df_name); df_index <- df_index+1
+          message(paste(nrow(d)," SNPs at ",covs[i],"x coverage.", sep=""))
+
+        } else{
+          assign(df_name, NA)
+          df_names_total[df_index] <- paste(df_name); df_index <- df_index+1
+          message(paste("0 SNPs at ",covs[i],"x coverage.", sep=""))
+        }
+      }
     }
     
     #append dataframes to build master dataframes (wide and long) by coverage
