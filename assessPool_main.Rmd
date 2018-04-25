@@ -112,18 +112,24 @@ If you wish to start over with your filtering at any time, simply re-run the Pre
 show.filter.output <- TRUE #set to FALSE if you want to suppress verbose output
 
 #Path to vcftools v0.1.12 or higher - edit if warned below
-vcftools_PATH1 <- system("which vcftools", intern = T)
-vcftools_PATH2 <- "/path/to/vcftools0.1.12_or_higher/"
-#example: vcftools_PATH2 <- "/home/evan/miniconda2/bin/"
 
-vcf_export <- paste("export PATH=", vcftools_PATH, "/:$PATH;", sep = "")
-version <-system(paste(vcf_export,'vcftools'), intern=T)[2]
+vcftools_PATH <- system("which vcftools", intern = T)
+
+#edit this path if warned below
+vcftools_PATH.mod <- "/path/to/vcftools0.1.12_or_higher/"
+#example: vcftools_PATH <- "/home/evan/miniconda2/bin/"
+
+vcftools_path_export <- paste("export PATH=", vcftools_PATH, "/:$PATH;", sep = "")
+
+version <-system(paste(vcftools_path_export,'vcftools'), intern=T)[2]
+
 if(grepl("0.1.11", version)) {
-     assign("vcftools_path_export",vcftools_PATH2)
-     stop("Please update vcftools to v0.1.12 or later, and/or edit vcf_PATH above")
-   } else {assign("vcftools_path_export",vcftools_PATH1)
+     assign("vcftools_path_export",vcftools_PATH.mod)
+     stop("Please update vcftools to v0.1.12 or later, and/or edit vcftools_PATH above")
+   } else {
      message("using VCFtools v0.1.12 or higher")
 }
+  
 
 filter_df <- vcf_init(vcf_file, working_dir, show.filter.output)
 ```
