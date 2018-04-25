@@ -53,7 +53,7 @@ system("chmod +x scripts/filtering/ErrorCount.sh")
 working_dir <- here()
 
 #initialize vcftools path - do not edit here
-vcftools_PATH <- ''
+###vcftools_PATH <- ''
 
 #install vcflib if not already done
 vcflib_PATH <- tryCatch({
@@ -109,24 +109,21 @@ below before proceeding.
 
 If you wish to start over with your filtering at any time, simply re-run the PreFilteringParameters chunk below.
 ```{r PreFilteringParameters}
-
 show.filter.output <- TRUE #set to FALSE if you want to suppress verbose output
 
-#Path to vcftools v0.1.12 or higher - uncomment and edit if warned below, then re-run code chunk
-#vcftools_PATH <- "export PATH=<PATH_TO_VCFTOOLS_0.1.12_or_later>:$PATH;"
-#example:
-#vcftools_PATH <- " export PATH=/home/evan/miniconda2/bin/:$PATH;"
+#Path to vcftools v0.1.12 or higher - edit if warned below
+vcftools_PATH1 <- system("which vcftools", intern = T)
+vcftools_PATH2 <- "/path/to/vcftools0.1.12_or_higher/"
+#example: vcftools_PATH2 <- "/home/evan/miniconda2/bin/"
 
-#determine vcftools version
-version <-system(paste(vcftools_path_export,'vcftools', sep=""), intern=T)[2]
+vcf_export <- paste("export PATH=", vcftools_PATH, "/:$PATH;", sep = "")
+version <-system(paste(vcf_export,'vcftools'), intern=T)[2]
 if(grepl("0.1.11", version)) {
-     assign("vcftools_path_export",vcftools_PATH)
-     stop("Please update vcftools to v0.1.12 or later, and/or edit vcf_PATH above and re-run this chunk")
-   } else {
+     assign("vcftools_path_export",vcftools_PATH2)
+     stop("Please update vcftools to v0.1.12 or later, and/or edit vcf_PATH above")
+   } else {assign("vcftools_path_export",vcftools_PATH1)
      message("using VCFtools v0.1.12 or higher")
 }
-
-vcftools_path_export <- paste("export PATH=", vcftools_path_export, ":$PATH;", sep = "")
 
 filter_df <- vcf_init(vcf_file, working_dir, show.filter.output)
 ```
