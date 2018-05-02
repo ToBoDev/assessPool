@@ -53,7 +53,7 @@ system("chmod +x scripts/filtering/ErrorCount.sh")
 working_dir <- here()
 
 #initialize vcftools path - do not edit here
-###vcftools_PATH <- ''
+vcftools_PATH <- system("which vcftools", intern = T)
 
 #install vcflib if not already done
 vcflib_PATH <- tryCatch({
