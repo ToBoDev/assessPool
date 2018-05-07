@@ -154,7 +154,7 @@ Requires: BH, DBI, Rcpp, bit64, blob, memoise, pkgconfig, plogr
 
 Package: Rcpp
 Source: CRAN
-Version: 0.12.14
+Version: 0.12.16
 Hash: f9a2a481350397e53b0768bf488329cd
 
 Package: Rsamtools
