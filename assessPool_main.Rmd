@@ -112,7 +112,7 @@ If you wish to start over with your filtering at any time, simply re-run the Pre
 show.filter.output <- TRUE #set to FALSE if you want to suppress verbose output
 
 #edit this path and re-run chunk if warned below
-vcftools_PATH.mod <- "/path/to/vcftools0.1.12_or_higher/"
+vcftools_PATH <- "/path/to/vcftools0.1.12_or_higher/"
 #example: vcftools_PATH <- "/home/evan/miniconda2/bin/"
 
 vcftools_path_export <- paste("export PATH=", vcftools_PATH, "/:$PATH;", sep = "")
