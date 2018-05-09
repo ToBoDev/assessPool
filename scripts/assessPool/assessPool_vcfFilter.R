@@ -77,7 +77,7 @@ filter_numpools <- function(working_dir, project_name, vcf_file, x, fdf, out){
 ### Filter by quality 
 filter_quality <- function(working_dir, project_name, vcf_file, x, fdf, out){
   setwd(working_dir)
-  system(paste(vcftools_path_export,"vcftools --vcf", paste("filtered_",vcf_file,sep=""), "--minQ", x, "--recode --recode-INFO-all --out temp"))
+  system(paste("vcftools --vcf", paste("filtered_",vcf_file,sep=""), "--minQ", x, "--recode --recode-INFO-all --out temp"))
   
   m  <- paste("After filtering by minimum quality (",x,"):", sep="")
   message(""); message(m); write.log(paste("\n\n\n\n",m,sep=""), "filter.log")
@@ -106,7 +106,7 @@ filter_quality <- function(working_dir, project_name, vcf_file, x, fdf, out){
 ### Filter by minimum depth
 filter_mindepth <- function(working_dir, project_name, vcf_file, x, y, fdf, out){
   setwd(working_dir)
-  system(paste(vcftools_path_export,"vcftools --vcf", paste("filtered_",vcf_file,sep=""), "--minDP", x, "--remove-filtered-geno-all --max-missing-count", y, "--recode --recode-INFO-all --out temp"))
+  system(paste("vcftools --vcf", paste("filtered_",vcf_file,sep=""), "--minDP", x, "--remove-filtered-geno-all --max-missing-count", y, "--recode --recode-INFO-all --out temp"))
   
   m  <- paste("After filtering by minimum depth (",x,"):", sep="")
   message(""); message(m); write.log(paste("\n\n\n\n",m,sep=""), "filter.log")
@@ -229,7 +229,7 @@ filter_ddocent <- function(working_dir, project_name, vcf_file, fdf, out){
   dp1 <- system("mawk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }' F5.DEPTH", intern=T)
   dp2 <- system(paste('python -c "print int(', dp1,'+3*(', dp1,'**0.5))"', sep=""), intern=T)
   system(paste("paste F5.loci.qual F5.DEPTH | mawk -v x=",dp2," '$4 > x' | mawk '$3 < 2 * $4' > F5.lowQDloci", sep=""))
-  system(paste(vcftools_path_export, ' vcftools --vcf', paste("filtered_",vcf_file,sep=""), '--recode-INFO-all --out temp --exclude-positions F5.lowQDloci --recode'))
+  system(paste('vcftools --vcf', paste("filtered_",vcf_file,sep=""), '--recode-INFO-all --out temp --exclude-positions F5.lowQDloci --recode'))
   
   m  <- "After filtering by quality score to mean depth to depth ratio:"
   message(""); message(m); write.log(paste("\n\n\n\n",m,sep=""), "filter.log")
@@ -259,7 +259,7 @@ filter_ddocent <- function(working_dir, project_name, vcf_file, fdf, out){
 ### Filter by maximum mean depth
 filter_maxmeandepth <- function(working_dir, project_name, vcf_file, x, fdf, out){
   setwd(working_dir)
-  system(paste(vcftools_path_export,"vcftools --vcf", paste("filtered_",vcf_file,sep=""), "--max-meanDP", x, "--recode --recode-INFO-all --out temp"))
+  system(paste("vcftools --vcf", paste("filtered_",vcf_file,sep=""), "--max-meanDP", x, "--recode --recode-INFO-all --out temp"))
   
   m  <- paste("After filtering by maximum mean depth (",x,"):", sep="")
   message(""); message(m); write.log(paste("\n\n\n\n",m,sep=""), "filter.log")
