@@ -13,7 +13,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 rm(list=ls())
 
 #auto-installs packrat if not already on machine
-if ("packrat" %in% installed.packages == FALSE) install.packages("packrat")
+if ("packrat" %in% installed.packages() == FALSE) install.packages("packrat")
 
 packrat::restore(restart=TRUE) #installs necessary libraries if they are not already included
 packrat::on() #initializes packrat library
