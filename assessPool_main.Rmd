@@ -1,6 +1,6 @@
 ---
 editor_options: 
-title: "cessPOOL: A Variant Annotation Workflow"
+title: "assessPOOL: A Variant Annotation Workflow"
 output: html_notebook
 ---
 
