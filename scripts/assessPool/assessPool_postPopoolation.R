@@ -37,7 +37,7 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
       for(i in 1:C){
         f=paste(combs[i], ft,sep=''); assign(f, read.table(f, sep='\t')) #read in dataframe
         d=get(f) #get dataframe object
-        colnames(d)[c(1,2,6)]=c("CHROM","value"); d$pair <- combs[i]; d$analysis <- ft #reorganize columns
+        colnames(d)[c(1,2,6)]=c("CHROM","POS","value"); d$pair <- combs[i]; d$analysis <- ft #reorganize columns
         d$value <- as.numeric(gsub(".*=","",as.character(d$value))) #remove unwanted characters, convert to numeric
         d$snpid <- paste(d[,1], d[,2], sep = '_') #add snpid column
         d <- d[,c(1:2,6:9)] #drop unneeded columns
