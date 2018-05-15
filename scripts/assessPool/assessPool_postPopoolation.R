@@ -59,7 +59,7 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
     rm(postpop.master.tmp)
     
     #add columns from master dataframe
-    as$snpid <- paste(as$CHROM, as$POS, sep="_")
+    as$snpid <- paste(as$CHROM, as$POS, sep="_"); as$POS <- NULL
     postpop.master.wide <- merge(as[,-which(names(as) %in% c("LEN","INS.len","DEL.len"))], postpop.master.wide[,-which(names(postpop.master.wide) %in% c("CHROM"))], by="snpid", all.y=TRUE, all.x=FALSE) 
     
     #filter out monomorphic SNPs with all pairwise Fst=0
@@ -114,7 +114,8 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
       m <- paste(nrow(popl.appfx), " SNPs are strongly differentiated (FST>=", strong_diff, ") in at least one comparison.", sep="")
       message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
-      write.csv(popl.appfx, paste(working_dir,"/", project_name,"/output/", project_name, "_strongly_differentiated_sites.csv", sep=""), row.names=FALSE)
+      popl.appfx.export <- data.frame(lapply(popl.appfx, as.character), stringsAsFactors=FALSE)
+      write.csv(popl.appfx.export, paste(working_dir,"/", project_name,"/output/", project_name, "_strongly_differentiated_sites.csv", sep=""), row.names=FALSE)
       m <- paste("Exported strongly differentiated sites to ","output/", project_name,"_strongly_differentiated_sites.csv", sep="")
       message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
@@ -125,7 +126,8 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
       m <- paste(nrow(popl.fixed), "sites are alternatively fixed (FST=1) in an least one comparison.")
       message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
-      write.csv(popl.fixed, paste(working_dir,"/", project_name,"/output/", project_name, "_fixed_snps.csv", sep=""), row.names=FALSE)
+      popl.fixed.export <- data.frame(lapply(popl.fixed, as.character), stringsAsFactors=FALSE)
+      write.csv(popl.fixed.export, paste(working_dir,"/", project_name,"/output/", project_name, "_fixed_snps.csv", sep=""), row.names=FALSE)
       m <- paste("Exported alternatively fixed sites to ","output/", project_name,"_fixed_snps.csv", sep="")
       message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
