@@ -156,7 +156,8 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
       m <- paste(nrow(popl.lowP), " SNPs have a low p-value (p<=", p_cutoff, ") in at least one comparison.", sep="")
       message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
-      write.csv(popl.lowP, paste(working_dir,"/", project_name,"/output/", project_name, "_lowP_snps.csv", sep=""), row.names=FALSE)
+      popl.lowP.export <- data.frame(lapply(popl.lowP, as.character), stringsAsFactors=FALSE)
+      write.csv(popl.lowP.export, paste(working_dir,"/", project_name,"/output/", project_name, "_lowP_snps.csv", sep=""), row.names=FALSE)
       m <- paste("Exported low p-value sites to ","output/", project_name,"_lowP_snps.csv", sep="")
       message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     }
