@@ -132,7 +132,7 @@ filter_df <- filter_quality(working_dir, project_name, vcf_file, min.quality.sco
 ```{r}
 #Filter by minimum depth
 min.depth.threshold <- 3 #drops info called in fewer reads (total, not per pool) than this threshold (DEFAULT=3) 
-max.missing <- length(POPS)-1 #maximum amount of dropped genotypes due to low coverage for a SNP to be included
+max.missing <- 11 #maximum amount of dropped genotypes due to low coverage for a SNP to be included
 #if you want to keep SNPs called in at least one pool, set this number equal to one less than your number of pools
 filter_df <- filter_mindepth(working_dir, project_name, vcf_file, min.depth.threshold, max.missing, filter_df, show.filter.output)
 ```
