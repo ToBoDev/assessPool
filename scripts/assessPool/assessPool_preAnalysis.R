@@ -1,4 +1,4 @@
-#cessPOOL_preAnalysis.R
+#AcessPOOL_preAnalysis.R
 
 #VCF INFO
 #NS=Number samples with data
@@ -49,7 +49,7 @@ clean.up.list <- function(data_in) {
 }
 
 #creates master dataframe (wide-form) and stacked dataframe (long-form) for SYNC file creation
-preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.depth.threshold, max.indel.length, include.multiallelic, include.indels, vcf_file, ref_file) {
+preAnalysis <-function(working_dir, project_name, POPS, vcf_file, ref_file) {
   
     setwd(working_dir)
   
@@ -72,7 +72,7 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
     })
     setwd(paste(working_dir, project_name, sep="/"))
     suppressWarnings(dir.create(paste(working_dir, project_name, "output", sep="/")))
-    suppressWarnings(dir.create(paste(working_dir, project_name, "popoolation", sep="/")))
+    suppressWarnings(dir.create(paste(working_dir, project_name, "sync", sep="/")))
     suppressWarnings(dir.create(paste(working_dir, project_name, "logs", sep="/")))
   
     #if filtering log exists, move it to new logs directory
@@ -83,8 +83,10 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
     
     #set up new logfiles
     write.log(paste(project_name, Sys.time()), paste(working_dir, project_name, "logs/setup.log", sep="/"))
-    write.log(paste(project_name, Sys.time()), paste(working_dir, project_name, "logs/popoolation2.log", sep="/"))
+    write.log(paste(project_name, Sys.time()), paste(working_dir, project_name, "logs/sync.log", sep="/"))
     write.log(paste(project_name, Sys.time()), paste(working_dir, project_name, "logs/analysis.log", sep="/"))
+    write.log(paste(project_name, Sys.time()), paste(working_dir, project_name, "logs/popoolation.log", sep="/"))
+    write.log(paste(project_name, Sys.time()), paste(working_dir, project_name, "logs/poolfstat.log", sep="/"))
 
     #if user did not define population names, get them from the VCF
     if (is.null(POPS)) { POPS <- samples(header(as.vcf)) }
@@ -106,7 +108,9 @@ preAnalysis <-function(working_dir, project_name, POPS, min.pool.number, min.dep
     
     ## Add additional vectors
     info.as$Rlen <- with(info.as, nchar(as.character(REF)))
-    info.as$Alen <- with(info.as, (nchar(as.character(info.as$ALT))-str_count(as.character(info.as$ALT), ","))/(1+str_count(as.character(info.as$ALT), ",")))
+    info.as$Alen <- sapply(info.as$ALT, function(x) nchar(unlist(strsplit(x, split=","))[1]))
+    
+    #info.as$Alen <- with(info.as, (nchar(as.character(info.as$ALT))-str_count(as.character(info.as$ALT), ","))/(1+str_count(as.character(info.as$ALT), ",")))
     info.as$INS.len <- info.as$Alen-info.as$Rlen 
     info.as$DEL.len <- info.as$Rlen-info.as$Alen 
     info.as$TYPE <- as.character(info.as$TYPE)
