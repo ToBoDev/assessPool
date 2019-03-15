@@ -1,11 +1,11 @@
-# assessPool v1.0.0
+# assessPool v2.0.0
 Pool-Seq analysis software
 
 * Filters SNPs based on adjustable criterion with suggestions for pooled data 
 * Determines pool number and prepares proper data structure for analysis
 * Creates a customizable run script for Popoolation2 for all pairwise comparisons
-* Runs Popoolation2
-* Imports Popoolation2 output
+* Runs Popoolation2 and poolfstat
+* Imports Popoolation2 and poolfstat output
 * Generates population genetic statistics and plots for data visualization.
 
 ### Quick Start
