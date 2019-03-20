@@ -249,7 +249,7 @@ min_cov <- 2 #minimum coverage (in ALL populations) (DEFAULT=2)
 max_cov <- 1000 #maximum coverage, provide either a single value or a vector of maximum values per population (DEFAULT=1000)
 #vector example for three populations:
 #max_cov <- c(500, 600, 700)
-
+window_size <- 1 #set to 1 for SNP-specific FST calculation
 pool_size <- c(40,40)
  #number of individuals per pool, provide either a single value or a vector of individuals per pool
 #vector example for three populations:
@@ -286,8 +286,7 @@ calculateFST(use_parallel=use_parallel,
              min_count=min_count, 
              min_cov=min_cov, 
              max_cov=max_cov, 
-             pool_size=pool_size,
-             window_size=window_size)
+             pool_size=pool_size)
 
 ```
 
