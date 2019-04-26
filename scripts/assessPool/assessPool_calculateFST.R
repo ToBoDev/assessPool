@@ -214,9 +214,12 @@ runPopoolation <- function(use_parallel, no_cores, working_dir, project_name, mi
   min_covered_fract <- "--min-covered-fraction 1"
   window_size <- paste0("--window-size ", window_size)
   step_size <- "--step-size 1"
-  pool_size <- paste(pool_size, collapse=":")
-  pool_size <- paste("--pool-size", as.character(pool_size))
   popcomb <- pa_list_out$popcomb 
+   if (length(pool_size)==1){
+    pool_size_all <- matrix(pool_size, 2, ncol(popcomb))
+  } else {
+  	pool_size_all <- combn(pool_size,2)
+  }
   
   #write parameters to logfile
   write.log("PoPoolation2 Parameters:", paste(working_dir, project_name, "logs/popoolation.log", sep="/"))
@@ -231,7 +234,9 @@ runPopoolation <- function(use_parallel, no_cores, working_dir, project_name, mi
   write("\n", file="popool2_run.sh", append= F)
   
   #FST scripts
-  for(i in 1:ncol(popcomb)){            
+  for(i in 1:ncol(popcomb)){
+    pool_size <- paste(c(pool_size_all[1,i], pool_size_all[2,i]), collapse=":")
+    pool_size <- paste("--pool-size", as.character(pool_size))
     write(paste('perl', paste(pop_path, test[1],sep=''), "--input", paste(project_name, '_', popcomb[1,i], '_', popcomb[2,i], '.sync', sep=""), "--output", paste(paste(working_dir, project_name, "popoolation/", sep="/"), project_name, '_', popcomb[1,i], '_', popcomb[2,i], '.fst', sep=""), "--suppress-noninformative", min_count, min_cov, max_cov, min_covered_fract, window_size, step_size, pool_size,  sep=" "), file="popool2_run.sh", append = T)
   }
   write(paste("\n",paste(replicate(100, "#"), collapse=''),"\n"), file="popool2_run.sh", append = T)
@@ -271,13 +276,15 @@ runPoolfstat <- function(working_dir, project_name, min_count, min_cov, max_cov,
   
   #fix pool sizes sometime
   if (length(pool_size)==1){
-    pool_size <- rep(pool_size, 2)
+    pool_size_all <- matrix(pool_size, 2, ncol(popcomb))
+  } else {
+  	pool_size_all <- combn(pool_size,2)
   }
   
   for(i in 1:ncol(popcomb)){
     setwd(paste(working_dir, "/", project_name, "/sync", sep=""))
     tmp.pooldata <- popsync2pooldata(sync.file= paste(project_name, '_', popcomb[1,i], '_', popcomb[2,i], '.sync', sep=""),
-                                     poolsizes = pool_size, 
+                                     poolsizes = c(pool_size_all[1,i], pool_size_all[2,i]), 
                                      poolnames= c(popcomb[1,i], popcomb[2,i]), 
                                      min.cov.per.pool = min_cov, 
                                      max.cov.per.pool = max_cov,
