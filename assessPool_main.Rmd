@@ -477,10 +477,10 @@ cov.perpair.table.total_pf$pair <- as.character(cov.perpair.table.total_pf$pair)
 
 ### Summary visualization by coverage and comparison, sites called in all pools
 ```{r PairwiseSummaryAllPools}
-ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MeanFST, y=pair, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MeanFST, y=pair, colour=MinCoverage)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + coverage") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MinCoverage, y=MeanFST, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
-ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MinCoverage, y=MeanFST, colour=pair)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + comparison") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MeanFST, y=pair, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MeanFST, y=pair, colour=MinCoverage)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + coverage") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MinCoverage, y=MeanFST, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MinCoverage, y=MeanFST, colour=pair)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + comparison") + theme(plot.title = element_text(hjust = 0.5)))
 ```
 
 ### Pairwise mean F~ST~ by coverage
@@ -590,7 +590,7 @@ all_pools <- FALSE
 ```{r}
 
 #vectors for spatial data
-pop <- c("MCapKUR", "MCapLAY", "MCapLIS", "MCapMAR", "MCapMAU", "MCapMID", "MCapNIH", "MCapORG", "MCapPH", "MCapRED")
+pop <- POPS
 name <- c("Kure Atoll", "Laysan Isalnd", "Lisianski Island", "Maro Reef", "Maui Island", "Midway Atoll", "Nihoa Isalnd", "Oahu (orange)", "Pearl and Hermes Atoll", "Oahu (red)")
 lat <- c(28.3925, 25.7679, 26.0662, 25.4150, 20.7984, 28.2072, 23.0605, 21.4399, 27.8333, 21.4379)
 long <- c(-178.2936, -171.7322, -173.9665, -170.5900, -156.3319, -177.3735, -161.9218, -158.0001, -175.8333, -158.0001)
@@ -637,7 +637,7 @@ longasp <- c(min(all_pairs$long1)-((latrange/longrange)*(longrange/2)),max(all_p
   
 worldmap <- borders("world", colour="black", fill="gray40", xlim = longasp, ylim = latasp) # create a layer of borders
 p1 <-  ggplot() + worldmap + 
- geom_curve(data=all_pairs, aes(x = long1, y = lat1, xend = long2, yend = lat2, col = fst, size = fst), curvature = .4) +
+ geom_curve(data=all_pairs, aes(x = long1, y = lat1, xend = long2, yend = lat2, col = fst, size = -fst), curvature = .4) +
  geom_point(data=spatdat, aes(x = long, y = lat), col = "#970027") + 
   geom_text_repel(data=spatdat, aes(x = long, y = lat, label = name), size = 10) + 
   scale_color_gradient2(low = "red", mid = "yellow", high = "white", midpoint = .1) +
