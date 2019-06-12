@@ -9,7 +9,7 @@ Pool-Seq analysis software
 * Generates population genetic statistics and plots for data visualization.
 
 ### Quick Start
-1. To run assessPool, you will need: [RStudio](https://www.rstudio.com/), [samtools](http://www.htslib.org/), [CPAN](https://www.cpan.org/), [vcftools](http://vcftools.sourceforge.net/) v0.1.12 or higher, [vcflib](https://github.com/vcflib/vcflib), and (optionally) [GNU parallel](https://www.gnu.org/software/parallel/)
+1. To run assessPool, you will need: [R](https://www.r-project.org/) v3.6.0 or higher, [RStudio](https://www.rstudio.com/), [samtools](http://www.htslib.org/), [CPAN](https://www.cpan.org/), [vcftools](http://vcftools.sourceforge.net/) v0.1.12 or higher, [vcflib](https://github.com/vcflib/vcflib), and (optionally) [GNU parallel](https://www.gnu.org/software/parallel/)
 2. Navigate to desired working directory on your computer
 3. Clone repo into directory: `git clone https://github.com/ToBoDev/assessPool.git`
 4. Open assessPool Rproject in RStudio
