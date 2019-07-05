@@ -20,10 +20,10 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
 
     file.copy(from=vcf_file, to=paste(working_dir,project_name,vcf_file, sep="/"), overwrite = TRUE)
     file.copy(from=ref_file, to=paste(working_dir,project_name,ref_file, sep="/"), overwrite = TRUE)  
-    setwd(paste(working_dir,"/",project_name,"/popoolation", sep=""))
+    #setwd(paste(working_dir,"/",project_name,"/popoolation", sep=""))
   
     #add parameters to logfile
-    write.log("Analysis Parameters:", paste(working_dir, project_name, "logs/analysis.log", sep="/"))
+    write.log("Analysis Parameters:", paste(working_dir, project_name, "logs/analysis.log")
     write.log(paste("Strongly differentiated FST >=",strong_diff), paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     write.log(paste("Significant FET <=", p_cutoff), paste(working_dir, project_name, "logs/analysis.log", sep="/"))
   
