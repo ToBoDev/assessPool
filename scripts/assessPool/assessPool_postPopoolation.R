@@ -228,7 +228,7 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
     }
     
     #append dataframes to build master dataframes (wide and long) by coverage
-    postpop.master.wide.bycov <- unique(bind_rows(mget(unlist(df_names_total))))
+    postpop.master.wide.bycov <- unique(bind_rows(unlist(mget(unlist(df_names_total)))))
     min_covs <- data.frame(snpid=postpop.master.wide.bycov$snpid, MinCoverage=postpop.master.wide.bycov$MinCoverage, fstNAs=postpop.master.wide.bycov$fstNAs)
     postpop.master.long.bycov <- data.frame(merge(postpop.master.long, min_covs, all=FALSE)); rm(min_covs)
     postpop.master.long.bycov$pair <- as.character(postpop.master.long.bycov$pair)
