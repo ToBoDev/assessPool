@@ -403,44 +403,44 @@ if (length(list.files(pattern=".fst"))==0){
 ### Summary Visualization By Coverage, sites called in all sites and in all pools
 Number of SNPs, Number of Contigs, Mean # SNPs per contigs, Mean FST, SD FST for all sites (total) and all sites
 ```{r SummaryAllPools, Summary AllSites}
-allpairs_summary_plot(cov.allpairs.table.total = cov.allpairs.table.total_popoolation, cov.allpairs.table.allpools = cov.allpairs.table.allpools_popoolation)
-allpairs_summary_plot(cov.allpairs.table.total = cov.allpairs.table.total_poolfstat, cov.allpairs.table.allpools = cov.allpairs.table.allpools_poolfstat)
+if("popoolation" %in% fst.calc){
+    allpairs_summary_plot(cov.allpairs.table.total = cov.allpairs.table.total_popoolation, cov.allpairs.table.allpools = cov.allpairs.table.allpools_popoolation)
+}
+if("poolfstat" %in% fst.calc){
+    allpairs_summary_plot(cov.allpairs.table.total = cov.allpairs.table.total_poolfstat, cov.allpairs.table.allpools = cov.allpairs.table.allpools_poolfstat)
+}
 ```
 
 
 ### Wrangling for figures
 ```{r}
-postpop.master.wide_pp <- spread(postpop.master.long_popoolation, analysis, value)
-postpop.master.wide_pp$pair <- gsub(paste0(project_name,"_"), "", postpop.master.wide_pp$pair) 
-postpop.master.wide_pp <- separate(postpop.master.wide_pp, pair, c("popA","popB"), sep="_", remove=F)
+if("popoolation" %in% fst.calc){
+    postpop.master.wide_pp <- spread(postpop.master.long_popoolation, analysis, value)
+    postpop.master.wide_pp$pair <- gsub(paste0(project_name,"_"), "", postpop.master.wide_pp$pair) 
+    postpop.master.wide_pp <- separate(postpop.master.wide_pp, pair, c("popA","popB"), sep="_", remove=F)
 
-cov.perpair.table.total_pp <- cov.perpair.table.total_popoolation[order(cov.perpair.table.total_popoolation$MinCoverage),]
-cov.perpair.table.total_pp <- separate(cov.perpair.table.total_pp, pair, c("popA","popB"), sep="_", remove=F)
-cov.perpair.table.total_pp$NumSNPs <- as.numeric(cov.perpair.table.total_pp$NumSNPs)
-cov.perpair.table.total_pp$NumContigs <- as.numeric(cov.perpair.table.total_pp$NumContigs)
-cov.perpair.table.total_pp$pair <- as.character(cov.perpair.table.total_pp$pair)
+    cov.perpair.table.total_pp <- cov.perpair.table.total_popoolation[order(cov.perpair.table.total_popoolation$MinCoverage),]
+    cov.perpair.table.total_pp <- separate(cov.perpair.table.total_pp, pair, c("popA","popB"), sep="_", remove=F)
+    cov.perpair.table.total_pp$NumSNPs <- as.numeric(cov.perpair.table.total_pp$NumSNPs)
+    cov.perpair.table.total_pp$NumContigs <- as.numeric(cov.perpair.table.total_pp$NumContigs)
+    cov.perpair.table.total_pp$pair <- as.character(cov.perpair.table.total_pp$pair)
+}
 
-postpop.master.wide_pf <- spread(postpop.master.long_poolfstat, analysis, value)
-postpop.master.wide_pf$pair <- gsub(paste0(project_name,"_"), "", postpop.master.wide_pf$pair) 
-postpop.master.wide_pf <- separate(postpop.master.wide_pf, pair, c("popA","popB"), sep="_", remove=F)
+if("poolfstat" %in% fst.calc){
+    postpop.master.wide_pf <- spread(postpop.master.long_poolfstat, analysis, value)
+    postpop.master.wide_pf$pair <- gsub(paste0(project_name,"_"), "", postpop.master.wide_pf$pair) 
+    postpop.master.wide_pf <- separate(postpop.master.wide_pf, pair, c("popA","popB"), sep="_", remove=F)
 
-cov.perpair.table.total_pf <- cov.perpair.table.total_poolfstat[order(cov.perpair.table.total_poolfstat$MinCoverage),]
-cov.perpair.table.total_pf <- separate(cov.perpair.table.total_pf, pair, c("popA","popB"), sep="_", remove=F)
-cov.perpair.table.total_pf$NumSNPs <- as.numeric(cov.perpair.table.total_pf$NumSNPs)
-cov.perpair.table.total_pf$NumContigs <- as.numeric(cov.perpair.table.total_pf$NumContigs)
-cov.perpair.table.total_pf$pair <- as.character(cov.perpair.table.total_pf$pair)
-```
-
-### Summary visualization by coverage and comparison, all sites
-```{r PairwiseSummaryAllSites}
-# ggplotly(ggplot(cov.perpair.table.total, aes(x=MeanFST, y=pair, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
-# ggplotly(ggplot(cov.perpair.table.total, aes(x=MeanFST, y=pair, colour=MinCoverage)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + coverage") + theme(plot.title = element_text(hjust = 0.5)))
-# ggplotly(ggplot(cov.perpair.table.total, aes(x=MinCoverage, y=MeanFST, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
-# ggplotly(ggplot(cov.perpair.table.total, aes(x=MinCoverage, y=MeanFST, colour=pair)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + comparison") + theme(plot.title = element_text(hjust = 0.5)))
-# ggplotly(ggplot(cov.perpair.table.total, aes(x=MinCoverage, y=log(NumSNPs), colour=pair)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Log # SNPs") + ggtitle("# SNPs by coverage + comparison") + theme(plot.title = element_text(hjust = 0.5)))
+    cov.perpair.table.total_pf <- cov.perpair.table.total_poolfstat[order(cov.perpair.table.total_poolfstat$MinCoverage),]
+    cov.perpair.table.total_pf <- separate(cov.perpair.table.total_pf, pair, c("popA","popB"), sep="_", remove=F)
+    cov.perpair.table.total_pf$NumSNPs <- as.numeric(cov.perpair.table.total_pf$NumSNPs)
+    cov.perpair.table.total_pf$NumContigs <- as.numeric(cov.perpair.table.total_pf$NumContigs)
+    cov.perpair.table.total_pf$pair <- as.character(cov.perpair.table.total_pf$pair)
+}
 ```
 
 ```{r}
+if("popoolation" %in% fst.calc){
  cov.perpair.table.total_pp %>%
   plot_ly(
     x = ~MeanFST, 
@@ -456,7 +456,9 @@ cov.perpair.table.total_pf$pair <- as.character(cov.perpair.table.total_pf$pair)
   layout(margin=list(l = 100, r = 20, b = 10, t = 10)) %>%
   layout(yaxis = list(tickangle=-35,tickfont=list(size=12))) %>%
   layout(xaxis = list(tickfont=list(size=12)))
+}
 
+if("poolfstat" %in% fst.calc){
  cov.perpair.table.total_pf %>%
   plot_ly(
     x = ~MeanFST, 
@@ -472,20 +474,13 @@ cov.perpair.table.total_pf$pair <- as.character(cov.perpair.table.total_pf$pair)
   layout(margin=list(l = 100, r = 20, b = 10, t = 10)) %>%
   layout(yaxis = list(tickangle=-35,tickfont=list(size=12))) %>%
   layout(xaxis = list(tickfont=list(size=12)))
-```
-
-
-### Summary visualization by coverage and comparison, sites called in all pools
-```{r PairwiseSummaryAllPools}
-# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MeanFST, y=pair, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
-# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MeanFST, y=pair, colour=MinCoverage)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + coverage") + theme(plot.title = element_text(hjust = 0.5)))
-# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MinCoverage, y=MeanFST, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
-# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MinCoverage, y=MeanFST, colour=pair)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + comparison") + theme(plot.title = element_text(hjust = 0.5)))
+}
 ```
 
 ### Pairwise mean F~ST~ by coverage
 
 ```{r}
+if("popoolation" %in% fst.calc){
  cov.perpair.table.allpools_popoolation %>%
   plot_ly(
     x = ~MeanFST, 
@@ -501,7 +496,9 @@ cov.perpair.table.total_pf$pair <- as.character(cov.perpair.table.total_pf$pair)
   layout(margin=list(l = 100, r = 20, b = 10, t = 10)) %>%
   layout(yaxis = list(tickangle=-35,tickfont=list(size=12))) %>%
   layout(xaxis = list(tickfont=list(size=12)))
+}
 
+if("poolfstat" %in% fst.calc){
  cov.perpair.table.allpools_poolfstat %>%
   plot_ly(
     x = ~MeanFST, 
@@ -517,11 +514,13 @@ cov.perpair.table.total_pf$pair <- as.character(cov.perpair.table.total_pf$pair)
   layout(margin=list(l = 100, r = 20, b = 10, t = 10)) %>%
   layout(yaxis = list(tickangle=-35,tickfont=list(size=12))) %>%
   layout(xaxis = list(tickfont=list(size=12)))
+}
 ```
 
 ### Locus-by-locus F~ST~
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+if("popoolation" %in% fst.calc){
 postpop.master.wide_pp %>%
   plot_ly(
     x = ~.fst, 
@@ -536,7 +535,9 @@ postpop.master.wide_pp %>%
   layout(margin=list(l = 200, r = 20, b = 80, t = 10)) %>%
   layout(yaxis = list(tickangle=-35,tickfont=list(size=18))) %>%
   layout(xaxis = list(tickfont=list(size=18)))
+}
 
+if("poolfstat" %in% fst.calc){
 postpop.master.wide_pf %>%
   plot_ly(
     x = ~.fst, 
@@ -551,6 +552,7 @@ postpop.master.wide_pf %>%
   layout(margin=list(l = 200, r = 20, b = 80, t = 10)) %>%
   layout(yaxis = list(tickangle=-35,tickfont=list(size=18))) %>%
   layout(xaxis = list(tickfont=list(size=18)))
+}
 ```
 
 ### FST heatmap parameters
@@ -562,6 +564,7 @@ heatmap_cov <- 40
 #include only SNPs called in all pools?
 all_pools <- FALSE
 
+if("popoolation" %in% fst.calc){
   if (all_pools){ postpop <- postpop.master.long.allpools_popoolation
   } else{ postpop <- postpop.master.long_popoolation }
   hm_list_out <- poolHeatmaps(heatmap_cov=heatmap_cov, postpop=postpop, fst.calc = 'popoolation')
@@ -574,8 +577,10 @@ all_pools <- FALSE
   #hc.rows <- hclust(dist(fst))
   #hc.cols <- hclust(dist(t(fst)))
   #heatmap(fst)
+}
 
-  if (all_pools){ postpop <- postpop.master.long.allpools_popoolation
+if("poolfstat" %in% fst.calc){
+  if (all_pools){ postpop <- postpop.master.long.allpools_poolfstat
   } else{ postpop <- postpop.master.long_poolfstat }
   hm_list_out <- poolHeatmaps(heatmap_cov=heatmap_cov, postpop=postpop, fst.calc = 'poolfstat')
   fst <- as.matrix(hm_list_out$fst)
@@ -584,6 +589,7 @@ all_pools <- FALSE
   #hc.rows <- hclust(dist(fst))
   #hc.cols <- hclust(dist(t(fst)))
   #heatmap(fst)
+}
 
 ```
 ### Map setup **NOT STABLE**
