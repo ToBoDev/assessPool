@@ -100,7 +100,7 @@ project_name <- "my_project"
 #finds input files (VCF and reference fasta)
 #NOTE: if your files are in a different directory, or if you have multiple vcf/ref files,
 #replace below with paths to the correct files
-vcf_file <- list.files(pattern="*.vcf")[1]
+vcf_file <- grep("filtered", list.files(pattern="*.vcf"), invert=T, value=T)
 ref_file <- list.files(pattern="*.fasta")[1]
 
 #optional: add your populations/pool labels here if they differ from VCF
