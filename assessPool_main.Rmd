@@ -260,6 +260,9 @@ pool_size <- c(40,40)
 use_parallel <- TRUE #set to FALSE if not using GNU parallel
 no_cores <- 20 #number of cores to use for analysis (try not to use max)
 
+#sudo options for perl module
+use_sudo <- T #use sudo permissions to install "Text::NSP::Measures::2D::Fisher::twotailed" perl module for popoolation2
+
 ```
 
 ### Calculate Pairwise Fst
@@ -286,7 +289,8 @@ calculateFST(use_parallel=use_parallel,
              min_count=min_count, 
              min_cov=min_cov, 
              max_cov=max_cov, 
-             pool_size=pool_size)
+             pool_size=pool_size
+             use_sudo=use_sudo)
 
 ```
 
