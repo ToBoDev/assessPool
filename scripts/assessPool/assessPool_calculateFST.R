@@ -200,6 +200,21 @@ buildSYNC <- function(working_dir, project_name, as.st, POPS, popcomb, include.m
 runPopoolation <- function(use_parallel, no_cores, working_dir, project_name, min_count, min_cov, max_cov, 
                            window_size, pool_size, POPS, popcomb){
   
+  message("Checking for popoolation2 required perl module \"Text::NSP::Measures::2D::Fisher::twotailed\" ")
+  perl_module_check <- system("cpan Text::NSP::Measures::2D::Fisher::twotailed", intern=T)
+  
+  if(any(grepl("is up to date", perl_module_check))){ 
+    message("perl module already installed, no further action needed!")
+  } else {
+    if(use_sudo){
+      system("sudo -kS cpan Text::NSP::Measures::2D::Fisher::twotailed", input = rstudioapi::askForPassword("sudo password to install perl module"))
+      message("perl module Text::NSP::Measures::2D::Fisher::twotailed installed system wide")
+      } else {
+      system("cpan Text::NSP::Measures::2D::Fisher::twotailed", input = rstudioapi::askForPassword("sudo password to install perl module"))
+      message("perl module Text::NSP::Measures::2D::Fisher::twotailed installed locally")
+      }
+  }
+  
   message("Calculating FST using PoPoolation2.")
   
   #define desired tests and parameters
