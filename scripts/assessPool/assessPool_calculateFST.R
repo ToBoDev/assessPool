@@ -198,15 +198,14 @@ buildSYNC <- function(working_dir, project_name, as.st, POPS, popcomb, include.m
 
 #generate script for PoPoolation and run script
 runPopoolation <- function(use_parallel, no_cores, working_dir, project_name, min_count, min_cov, max_cov, 
-                           window_size, pool_size, POPS, popcomb){
+                           window_size, pool_size, POPS, popcomb, use_sudo){
   
   message("Checking for popoolation2 required perl module \"Text::NSP::Measures::2D::Fisher::twotailed\" ")
   perl_module_check <- system("cpan Text::NSP::Measures::2D::Fisher::twotailed", intern=T)
-  
   if(any(grepl("is up to date", perl_module_check))){ 
     message("perl module already installed, no further action needed!")
   } else {
-    if(use_sudo){
+    if(use_sudo==T){
       system("sudo -kS cpan Text::NSP::Measures::2D::Fisher::twotailed", input = rstudioapi::askForPassword("sudo password to install perl module"))
       message("perl module Text::NSP::Measures::2D::Fisher::twotailed installed system wide")
       } else {
@@ -214,6 +213,7 @@ runPopoolation <- function(use_parallel, no_cores, working_dir, project_name, mi
       message("perl module Text::NSP::Measures::2D::Fisher::twotailed installed locally")
       }
   }
+
   
   message("Calculating FST using PoPoolation2.")
   
@@ -328,7 +328,7 @@ runPoolfstat <- function(working_dir, project_name, min_count, min_cov, max_cov,
 
 #wrapper function for generating SYNC files and calculating FST
 calculateFST <- function(use_parallel, no_cores, working_dir, project_name, fst.calc, as.st, POPS,
-                         popcomb, include.multiallelic, include.indels, min_count, min_cov, max_cov, pool_size){
+                         popcomb, include.multiallelic, include.indels, min_count, min_cov, max_cov, pool_size, use_sudo){
   
   #first, write all pairwise SYNC files
   buildSYNC(working_dir, project_name, as.st, POPS, popcomb, include.multiallelic, include.indels)
@@ -337,7 +337,7 @@ calculateFST <- function(use_parallel, no_cores, working_dir, project_name, fst.
   if ("popoolation" %in% fst.calc ){
     suppressWarnings(dir.create(paste(working_dir, project_name, "popoolation", sep="/")))
     runPopoolation(use_parallel, no_cores, working_dir, project_name, min_count, min_cov, max_cov, 
-                   window_size, pool_size, POPS, popcomb)
+                   window_size, pool_size, POPS, popcomb, use_sudo)
   }
   
   #calculate Fst with poolfstat if specified
