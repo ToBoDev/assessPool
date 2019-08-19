@@ -289,7 +289,7 @@ calculateFST(use_parallel=use_parallel,
              min_count=min_count, 
              min_cov=min_cov, 
              max_cov=max_cov, 
-             pool_size=pool_size
+             pool_size=pool_size,
              use_sudo=use_sudo)
 
 ```
