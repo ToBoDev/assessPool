@@ -82,7 +82,7 @@ vcflib_PATH <- tryCatch({
 })
 
 project_name <- NULL
-vcf_file <- NULL
+vcf_starting_file <- NULL
 ref_file <- NULL
 
 ```
@@ -112,7 +112,7 @@ project_name <- showPrompt(title="Project Name?", message = paste("Choose your n
 }
 #prompt for input files (VCF and reference fasta)
 
-vcf_file <- basename(selectFile(caption = "Select VCF File", label = "Select",
+vcf_starting_file <- basename(selectFile(caption = "Select VCF File", label = "Select",
 path = getActiveProject(), filter = "VCF Files (*.vcf)", existing = T))
 
 #vcf_file <- basename(
@@ -120,6 +120,10 @@ path = getActiveProject(), filter = "VCF Files (*.vcf)", existing = T))
 ref_file <- basename(selectFile(caption = "Select Reference fasta", label = "Select",
 path = getActiveProject(), filter = "Reference Files (*.fasta) | (*.fa)",
 existing = T))
+} else {
+  project_name <- project_name
+vcf_starting_file <- vcf_starting_file
+ref_file <- ref_file
 }
   
 showDialog(title = "Confirm?",
@@ -133,7 +137,7 @@ showDialog(title = "Confirm?",
 #uncomment line below to use
 #POPS <- c('Pool1', 'Pool2', 'Pool3') 
 
-pool_num <- length(samples(scanVcfHeader(vcf_file)))
+pool_num <- length(samples(scanVcfHeader(vcf_starting_file)))
 ```
 
 ### VCF Filtering Setup (OPTIONAL)
@@ -146,7 +150,7 @@ If you wish to start over with your filtering at any time, simply re-run the Pre
 ```{r PreFilteringParameters}
 show.filter.output <- TRUE #set to FALSE if you want to suppress verbose output  
 
-filter_df <- vcf_init(vcf_file, working_dir, show.filter.output)
+filter_df <- vcf_init(vcf_starting_file, working_dir, show.filter.output)
 ```
 
 ### VCF Filtering Steps (OPTIONAL)
