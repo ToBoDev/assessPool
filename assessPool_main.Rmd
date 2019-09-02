@@ -101,10 +101,10 @@ If desired, set project name, paths to input files, and basic filter parameters 
 
 
 if(any(exists("project_name")==F | is.null(project_name) |
-       exists("vcf_file")==F | is.null(vcf_file) |
+       exists("vcf_starting_file")==F | is.null(vcf_starting_file) |
        exists("ref_file")==F) | is.null(ref_file)){
  if(showQuestion(title="Change files?", 
-                 message=paste("Project name:", project_name, "***** VCF: ", vcf_file, "***** Reference: ", ref_file), 
+                 message=paste("Project name:", project_name, "***** VCF: ", vcf_starting_file, "***** Reference: ", ref_file), 
                  ok = "Yes, change", 
                  cancel = "No, accept input")==T) {
    
