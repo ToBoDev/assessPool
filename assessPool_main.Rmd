@@ -152,6 +152,7 @@ If you wish to start over with your filtering at any time, simply re-run the Pre
 show.filter.output <- TRUE #set to FALSE if you want to suppress verbose output  
 
 filter_df <- vcf_init(vcf_starting_file, working_dir, show.filter.output)
+vcf_file <- vcf_starting_file
 ```
 
 ### VCF Filtering Steps (OPTIONAL)
