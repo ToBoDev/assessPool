@@ -47,6 +47,7 @@ library(here)
 library(poolfstat)
 library(ggrepel)
 library(maps)
+library(rstudioapi)
 
 #import R functions from other scripts
 source("scripts/assessPool/assessPool_vcfFilter.R")
