@@ -18,7 +18,6 @@ vcf_init <- function(vcf_file, wd, output){
   
   #copies vcf file
   filtered_filename <- paste("filtered_",vcf_file,sep="")
-  vcf_file <- vcf_starting_file
   sink("/dev/null"); file.copy(from=vcf_file, to=filtered_filename, overwrite = TRUE); sink()
   
   filtering_steps <- data.frame(Filter=NA, SNPs=NA)
