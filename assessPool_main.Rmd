@@ -129,7 +129,7 @@ ref_file <- ref_file
   
 showDialog(title = "Confirm?",
            message = paste("<b>Project name:</b> <i>", project_name, "</i>",
-                            "<b>VCF</b>: <i>", vcf_file, "</i>",
+                            "<b>VCF</b>: <i>", vcf_starting_file, "</i>",
                             "<b>Reference:</b> <i>", ref_file, "</i>") )
                            
 
