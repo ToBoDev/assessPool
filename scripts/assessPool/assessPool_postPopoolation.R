@@ -185,7 +185,7 @@ postPopoolation <- function(filetype, project_name, as, popcomb, strong_diff, p_
     #get SNPs at each minimum coverage level
     for(i in 1:length(covs)){
       df_name <- paste("popl.master.", covs[i],"x", sep="")
-      if (length(tmp.idx>0)){
+      if (length(tmp.idx)>0){
         tmp.postpop <- tmp.postpop[-tmp.idx,]
       }
       bool.out <- apply(tmp.postpop[,c("popIncl", names(tmp.postpop)[grep("DP\\.", names(tmp.postpop))])], 1, function(x) popNACheck(x, covs[i]))
