@@ -179,12 +179,12 @@ preAnalysis <-function(working_dir, project_name, POPS, vcf_file, ref_file) {
     as.tmp <- as[,which(names(as) %in% as.tmp.cols)] 
     
     #Stack reference/alt allele counts by population 
-    as.stack.ro <- melt(as.tmp, measure.vars=c(RO.tmp), variable_name="Pop") #convert from wide to long
+    as.stack.ro <- melt(as.tmp, measure.vars=c(RO.tmp), variable.name="Pop") #convert from wide to long
     colnames(as.stack.ro)[which(names(as.stack.ro) == "value")] <- "RO"
     levels(as.stack.ro$Pop) <- POPS
     as.stack.ro <- as.stack.ro[-which(names(as.stack.ro) %in% AO.tmp)]
     
-    as.stack.ao <- melt(as.tmp, measure.vars=AO.tmp, variable_name="Pop")
+    as.stack.ao <- melt(as.tmp, measure.vars=AO.tmp, variable.name="Pop")
     colnames(as.stack.ao)[which(names(as.stack.ao) == "value")] <- "AO"
     levels(as.stack.ao$Pop) <- POPS
     as.stack.ao <- as.stack.ao[,which(names(as.stack.ao) %in% c("snpid","Pop","AO"))]
