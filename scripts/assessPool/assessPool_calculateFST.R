@@ -135,6 +135,8 @@ buildSYNC <- function(working_dir, project_name, as.st, POPS, popcomb, include.m
   m <- paste("Found ", length(unique(as.ins$snpid)), " single-base insertions.", sep="")
   message(m); write.log(paste(m,"\n"), paste(working_dir, project_name, "logs/setup.log", sep="/"))
   
+  
+  
   ###########################################################
   
   #JOIN rows
@@ -192,7 +194,8 @@ buildSYNC <- function(working_dir, project_name, as.st, POPS, popcomb, include.m
   vcf2popool_sync_out <- arrange(vcf2popool_sync_out, CHROM,POS)
   
   #create pairwise files for all populations
-  for(i in 1:ncol(popcomb))  write.table(bind_cols(vcf2popool_sync_out[,c(1:3)], select(vcf2popool_sync_out, popcomb[1,i]), select(vcf2popool_sync_out, popcomb[2,i])), paste(working_dir, "/", project_name, "/sync/", project_name, '_', popcomb[1,i], '_', popcomb[2,i], '.sync', sep=""), quote = F, row.names = F, col.names = F)
+  
+  for(i in 1:ncol(popcomb))  write.table(bind_cols(vcf2popool_sync_out[,c(1:3)], dplyr::select(vcf2popool_sync_out, popcomb[1,i]), dplyr::select(vcf2popool_sync_out, popcomb[2,i])), paste(working_dir, "/", project_name, "/sync/", project_name, '_', popcomb[1,i], '_', popcomb[2,i], '.sync', sep=""), quote = F, row.names = F, col.names = F)
   
 }
 
@@ -308,6 +311,7 @@ runPoolfstat <- function(working_dir, project_name, min_count, min_cov, max_cov,
     
     #calculate FST
     tmp.fst <- computeFST(tmp.pooldata)
+    pool.fstat.out <<- tmp.fst
     global.fst <- rbind(global.fst, data.frame(popcomb[1,i], popcomb[2,i], tmp.fst$FST))
     
     #write data to file (match PoPoolation2 output)
