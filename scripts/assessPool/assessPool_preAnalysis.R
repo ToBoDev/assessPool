@@ -53,9 +53,9 @@ preAnalysis <-function(working_dir, project_name, POPS, vcf_file, ref_file) {
   
     setwd(working_dir)
   
-    #test to see if filtering occured - if so, use that vcf file
-    if (file.exists(paste("filtered_", vcf_file, sep=""))){
-      vcf_file <- (paste("filtered_", vcf_file, sep=""))
+    #test to see if filtering occurred - if so, use that vcf file
+    if (file.exists(paste0("filtered_", vcf_file))){
+      vcf_file <- (paste0("filtered_", vcf_file))
     }
   
     #creates directories for output and analysis
@@ -64,12 +64,13 @@ preAnalysis <-function(working_dir, project_name, POPS, vcf_file, ref_file) {
     param <- ScanVcfParam(fixed = c("ALT","QUAL"), info = c("NS","DP","TYPE","LEN","NUMALT"), geno = c("DP","RO","AO","GT","GQ"))
     suppressWarnings(as.vcf <- readVcf(vcf_file,ref_file, param)); rm(param) ## Read-in data using VariantAnnotation
     project_name <- gsub(" ", "", project_name) 
-  
-    tryCatch({
-      dir.create(paste(working_dir, project_name, sep="/"))
-    }, warning=function(w){
-      message("\nWarning: Project directory already exists - may overwrite files.")
-    })
+    
+    #quick bash line to create project dir if not already created  
+    system(paste0("if [ ! -d ",paste0(working_dir,"/",project_name)," ]; then mkdir ",paste0(working_dir,"/",project_name),
+                  "; else echo \"\nWarning: Project directory already exists\"; fi"))
+    system(paste0("if [ ! -d ",paste0(working_dir,"/",project_name,"/output")," ]; then mkdir ",paste0(working_dir,"/",project_name,"/output"),
+                  "; fi"))
+
     setwd(paste(working_dir, project_name, sep="/"))
     suppressWarnings(dir.create(paste(working_dir, project_name, "output", sep="/")))
     suppressWarnings(dir.create(paste(working_dir, project_name, "sync", sep="/")))
@@ -89,7 +90,7 @@ preAnalysis <-function(working_dir, project_name, POPS, vcf_file, ref_file) {
     write.log(paste(project_name, Sys.time()), paste(working_dir, project_name, "logs/poolfstat.log", sep="/"))
 
     #if user did not define population names, get them from the VCF
-    if (is.null(POPS)) { POPS <- samples(header(as.vcf)) }
+    POPS <- samples(VariantAnnotation::header(as.vcf))
     POPS <- gsub("_", "", POPS)
     
     #create population pairwise combination matrix (each column, represents a pair). If triplets desired, use `comb(pops, 3)`, quad `comb(pops, 4)`, etc
@@ -207,3 +208,4 @@ preAnalysis <-function(working_dir, project_name, POPS, vcf_file, ref_file) {
     return(list("as"=as, "as.st"=as.st, "POPS"=POPS, "popcomb"=popcomb, "project_name"=project_name))
 
 }
+
