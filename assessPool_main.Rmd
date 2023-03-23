@@ -1,56 +1,69 @@
 ---
 editor_options: 
-title: "assessPOOL: A Variant Annotation Workflow"
+title: "assessPool: A Variant Annotation Workflow"
 output: html_notebook
 ---
 
-**Copyright E Barba, E Conklin, J Whitney 2018.** 
+**Copyright EB Freel, E Conklin, J Whitney 2018.** 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses/.
 
-```{r LibraryImport, message=FALSE, warning=FALSE, include=FALSE}
-#import necessary R libraries
 
-rm(list=ls())
-#lapply(paste('package:',names(sessionInfo()$otherPkgs),sep=""),detach,character.only=TRUE,unload=TRUE)
+```{r}  
+renv::restore()
+```
 
-#auto-installs packrat if not already on machine
-if ("packrat" %in% installed.packages() == FALSE) install.packages("packrat")
-
-packrat::restore(restart=TRUE) #installs necessary libraries if they are not already included
-packrat::on() #initializes packrat library
-#Install/upclte Bioconductor
-#source("https://bioconductor.org/biocLite.R")
-#biocLite()
-#library(BiocInstaller)
-#biocLite("VariantAnnotation") #to install/upclte packages
-#biocLite("GenomicFeatures"); biocLite("ShortRead"); biocLite("Biostrings"); biocLite("Rsamtools")
-#attachNamespace('stringi')
-library(stringi)
-library(seqinr)
-library(stringr)
-library(R.utils)
-#detach("package:VariantAnnotation", unload=TRUE)
-library(VariantAnnotation)
-library(GenomicFeatures)
-library(seqminer)  #library(vcf2geno) replaced by seqminer
-library(RJSONIO)
-#library(Rplinkseq) #not installed yet
-library(reshape2) 
+```{r, manual dependency loading}
+# dependencies <- c("BiocManager", "dataframes2xls", 
+#                   "dplyr", "GenomicFeatures", 
+#                   "ggplot2", "ggrepel", 
+#                   "here", "maps", 
+#                   "metap", "packrat", 
+#                   "plotly", "poolfstat", 
+#                   "R.utils", "reshape", 
+#                   "reshape2", "RJSONIO", 
+#                   "rstudioapi", "seqinr", 
+#                   "seqminer", "stringi", 
+#                   "stringr", "tidyr", 
+#                   "VariantAnnotation", "rmarkdown", 
+#                   "renv", "tidyverse", 
+#                   "grid", "plyr", "pracma")
+# 
+# 
+library(BiocManager)
 library(dataframes2xls)
-library(reshape)
 library(dplyr)
-library(tidyr)
+library(GenomicFeatures)
 library(ggplot2)
-library(metap)
-library(plotly)
-library(here)
-library(poolfstat)
 library(ggrepel)
+library(here)  
 library(maps)
+#library(metap) 
+library(plotly)
+library(poolfstat)
+library(R.utils)
+library(reshape)
+library(reshape2)
+library(RJSONIO)
 library(rstudioapi)
+library(seqinr)
+library(seqminer)
+library(stringi)
+library(stringr)
+library(tidyr)
+library(VariantAnnotation)
+library(rmarkdown)
+library(renv)
+library(tidyverse)
+library(grid)
+library(plyr)
+library(pracma)
+library(parallel)
+```
 
-#import R functions from other scripts
-source("scripts/assessPool/assessPool_vcfFilter.R")
+#inport scripts
+```{r, FunctionImport}
+#import R functions from other scriptshg
+source("scripts/assessPool/assessPool_vcfFilter_v2.R")
 source("scripts/assessPool/assessPool_preAnalysis.R")
 source("scripts/assessPool/assessPool_syncSetup.R")
 #source("scripts/assessPool/assessPool_runPopoolation.R")
@@ -62,14 +75,17 @@ source("scripts/assessPool/assessPool_visualizations.R")
 system("chmod +x scripts/filtering/ErrorCount.sh")
 
 #set working directory
-working_dir <- here()
+working_dir <- here::here()
+```
 
+
+```{r}
 #install vcflib if not already done
 vcflib_PATH <- tryCatch({
     system('vcffilter', intern=T, ignore.stderr=T)
     tmp <- ""
   }, error = function(e){ 
-    tmp <- paste(working_dir, "scripts", "vcflib", "bin/", sep="/")
+    tmp <- paste(working_dir, "scripts", "vcflib", "bin", sep="/")
     
     if (!file.exists(paste(working_dir, "scripts", "vcflib",sep="/"))){
       setwd(paste(working_dir, "scripts", sep="/"))
@@ -83,62 +99,37 @@ vcflib_PATH <- tryCatch({
 })
 
 project_name <- NULL
-vcf_starting_file <- NULL
+vcf_file <- NULL
 ref_file <- NULL
-
 ```
 
 Ensure the following files are located in the working directory:
 
   * \*.vcf        | *FreeBayes produced VCF file*
-  * \*.fasta      | *reference fasta (produced by dDocent or from NCBI if mapped directly to reference) *
+  * \*.fasta or \*.fa     | *reference fasta (produced by dDocent or from NCBI if mapped directly to reference) *
 
 ### Pre-Analysis Setup Parameters
 If desired, set project name, paths to input files, and basic filter parameters as described below.  
 ```{r PreAnalysisParameters}
-#set your project name - this will create a directory where output files are stored
-#NOTE - it is very important to change this if you are starting a new analysis
-#Otherwise it will overwrite your old one 
+project_name <- "<INSERT_PROJ_NAME>"
+spp_name <- "<INSERT_SPP_NAME"
+vcf_file <- "<INSERT_VCF_NAME>"
+ref_file <- "<INSERT_REF_NAME>"
 
-
-if(any(exists("project_name")==F | is.null(project_name) |
-       exists("vcf_starting_file")==F | is.null(vcf_starting_file) |
-       exists("ref_file")==F) | is.null(ref_file)){
- if(showQuestion(title="Change files?", 
-                 message=paste("Project name:", project_name, "***** VCF: ", vcf_starting_file, "***** Reference: ", ref_file), 
-                 ok = "Yes, change", 
-                 cancel = "No, accept input")==T) {
-   
-project_name <- showPrompt(title="Project Name?", message = paste("Choose your name for this project (current name:", project_name, ")"))
-}
-#prompt for input files (VCF and reference fasta)
-
-vcf_starting_file <- basename(selectFile(caption = "Select VCF File", label = "Select",
-path = getActiveProject(), filter = "VCF Files (*.vcf)", existing = T))
-
-#vcf_file <- basename(
-  
-ref_file <- basename(selectFile(caption = "Select Reference fasta", label = "Select",
-path = getActiveProject(), filter = "Reference Files (*.fasta) | (*.fa)",
-existing = T))
-} else {
-  project_name <- project_name
-vcf_starting_file <- vcf_starting_file
-ref_file <- ref_file
-}
-  
-showDialog(title = "Confirm?",
-           message = paste("<b>Project name:</b> <i>", project_name, "</i>",
-                            "<b>VCF</b>: <i>", vcf_starting_file, "</i>",
-                            "<b>Reference:</b> <i>", ref_file, "</i>") )
-                           
+project_name <- paste0("proj")
+spp_name <- paste0("Genus spp")
+vcf_file <- paste0(project_name, "_TotalRawSNPs.vcf")
+ref_file <- paste0(project_name, "_reference.fasta")
 
 #optional: add your populations/pool labels here if they differ from VCF
 #NOTE: it is very important that these names be in the same order as they appear in your VCF file
 #uncomment line below to use
-#POPS <- c('Pool1', 'Pool2', 'Pool3') 
 
-pool_num <- length(samples(scanVcfHeader(vcf_starting_file)))
+
+pool_num <- length(samples(scanVcfHeader(vcf_file)))
+
+POPS <- NULL
+#POPS <- c(paste0(rep("pool"), seq(1,pool_num)))
 ```
 
 ### VCF Filtering Setup (OPTIONAL)
@@ -151,88 +142,255 @@ If you wish to start over with your filtering at any time, simply re-run the Pre
 ```{r PreFilteringParameters}
 show.filter.output <- TRUE #set to FALSE if you want to suppress verbose output  
 
-filter_df <- vcf_init(vcf_starting_file, working_dir, show.filter.output)
-vcf_file <- vcf_starting_file
+threads <- parallel::detectCores()-1 #uses as many cores as possible by default, adjust as desired
+min.pool.number <- 2 #minimum number of pools needed for a SNP to be included (DEFAULT=2)
+#min.quality.score <- 25 #drops SNPs with quality scores lower than this threshold (DEFAULT=30)
+min.depth.threshold <- 10 #drops info called in fewer reads (total, not per pool) than this threshold (DEFAULT=3) 
+max.missing <- pool_num-1 #maximum amount of dropped genotypes due to low coverage for a SNP to be included
+
+keep.indel <- FALSE
+keep.multiallelic <- FALSE
+
+#if you want to keep SNPs called in at least one pool, set this number equal to one less than your number of pools
+max.allele.length <- 10 #drops SNPs with an allele length greater than this threshold (DEFAULT=10)
+
+#drops SNPS with a quality score:depth ratio lower than this threshold (DEFAULT=.25)
+#this removes low quality, high depth SNPs e.g. loci that were likely overgrouped
+quality.depth.ratio <- .25
+
+
+
+max.missing <- 0.25
+min.allele.count <- 2 
+min.mean.depth <- 3 
+max.mean.depth <- 500 
+hwe.cutoff <- 0.01
+min.mapping.quality <- c(39,39)
+mapping.ratio <- c(0.75,1.25)
+read.balance <- c(0,0)
+quality.depth.ratio <- 0.25
+mispaired.reads=T
+min.number.pools <- 2
+min.depth.all.pools <- 40
+max.allele.length <- 10
+min.qual <- 30
+variant.type <- "snp"
+alt.obs <- 2
+
+threads <- parallel::detectCores()-1
+
+test_all_parameters=T
+filter_SNPS <- T #change this to false if vcf is already filtered. Next chunk will only backup your file in prep for preAnalysis
 ```
+
+```{r}
+
+
+if(test_all_parameters==T){
+count_SNP_loss(max.missing=max.missing,
+                  min.allele.count=min.allele.count,
+                  min.mean.depth=min.mean.depth,
+                  max.mean.depth=max.mean.depth,
+                  hwe.cutoff=hwe.cutoff,
+                  min.mapping.quality=min.mapping.quality,
+                  mapping.ratio=mapping.ratio,
+                  read.balance=read.balance,
+                  quality.depth.ratio=quality.depth.ratio,
+                  mispaired.reads=mispaired.reads,
+                  min.number.pools=min.number.pools,
+                  min.depth.all.pools=min.depth.all.pools,
+                  max.allele.length=max.allele.length,
+                  min.qual=min.qual,
+                  variant.type=variant.type,
+                  alt.obs=alt.obs,
+                  threads=threads,
+                  working_dir=working_dir,
+                  project_name=project_name,
+                  vcf_file=vcf_file,
+                  vcflib_PATH=vcflib_PATH)
+}
+
+filter_df <- read.csv(file=paste0(working_dir,"/",project_name,"/",project_name,"_filtering_results.csv"))
+
+```
+
+```{r}
+
+max.missing <- 0.25
+min.allele.count <- NA
+min.mean.depth <- NA
+max.mean.depth <- 1000
+hwe.cutoff <- 0.01
+min.mapping.quality <- c(39,39)
+mapping.ratio <- c(0.75,1.25)
+read.balance <- NA
+quality.depth.ratio <- 0.25
+mispaired.reads=T
+min.number.pools <- 2
+min.depth.all.pools <- 50
+max.allele.length <- 10
+min.qual <- 40
+variant.type <- "snp"
+alt.obs <- 2
+
+if(filter_SNPS==T){
+run_selected_filters(max.missing=max.missing,
+                  min.allele.count=min.allele.count,
+                  min.mean.depth=min.mean.depth,
+                  max.mean.depth=max.mean.depth,
+                  hwe.cutoff=hwe.cutoff,
+                  min.mapping.quality=min.mapping.quality,
+                  mapping.ratio=mapping.ratio,
+                  read.balance=read.balance,
+                  quality.depth.ratio=quality.depth.ratio,
+                  mispaired.reads=mispaired.reads,
+                  min.number.pools=min.number.pools,
+                  min.depth.all.pools=min.depth.all.pools,
+                  max.allele.length=max.allele.length,
+                  min.qual=min.qual,
+                  variant.type=variant.type,
+                  alt.obs=alt.obs,
+                  #threads=threads,
+                  working_dir=working_dir,
+                  project_name=project_name,
+                  vcf_file=vcf_file,
+                  vcflib_PATH=vcflib_PATH)
+}
+```
+
 
 ### VCF Filtering Steps (OPTIONAL)
 The below steps will filter your SNPs into a "filtered_<x>.vcf", which will automatically be used in following steps.
 Steps can be re-run with different parameters as needed, but if you are going from a more stringent threshold to a less
 stringent one, it will be necessary to start your filtering over by re-running the PreFilteringParameters step first. 
 ```{r}
-#Filter by pool number
-min.pool.number <- 2 #minimum number of pools needed for a SNP to be included (DEFAULT=2)
-filter_df <- filter_numpools(working_dir, project_name, vcf_file, min.pool.number, filter_df, show.filter.output)
-```
-```{r}
-#Filter by indel and multiallelic SNPs
-keep.indel <- FALSE
-keep.multiallelic <- TRUE
-#filter_df <- filter_indels(working_dir, project_name, vcf_file, keep.indel, keep.multiallelic, filter_df, show.filter.output)
-```
+# filter_df <- vcf_filtering(vcf_file=vcf_file,
+#               working_dir=working_dir,
+#               threads=threads,
+#               show.filter.output=show.filter.output,
+#               filter_SNPS=filter_SNPS,
+#               min.pool.number=min.pool.number,
+#               keep.indel=keep.indel,
+#               keep.multiallelic=keep.multiallelic,
+#               thinning.threshold=thinning.threshold,
+#               #min.quality.score=min.quality.score,
+#               min.depth.threshold=min.depth.threshold,
+#               max.missing=max.missing,
+#               max.allele.length=max.allele.length,
+#               quality.depth.ratio=quality.depth.ratio)
 
-```{r}
-#Filter by quality score
-min.quality.score <- 30 #drops SNPs with quality scores lower than this threshold (DEFAULT=30)
-filter_df <- filter_quality(working_dir, project_name, vcf_file, min.quality.score, filter_df, show.filter.output)
-```
-
-```{r}
-#Filter by minimum depth
-min.depth.threshold <- 3 #drops info called in fewer reads (total, not per pool) than this threshold (DEFAULT=3) 
-max.missing <- pool_num-1 #maximum amount of dropped genotypes due to low coverage for a SNP to be included
-#if you want to keep SNPs called in at least one pool, set this number equal to one less than your number of pools
-filter_df <- filter_mindepth(working_dir, project_name, vcf_file, min.depth.threshold, max.missing, filter_df, show.filter.output)
-```
-
-```{r}
-#Filter by allele length
-max.allele.length <- 10 #drops SNPs with an allele length greater than this threshold (DEFAULT=10)
-filter_df <- filter_maxallelelength(working_dir, project_name, vcf_file, max.allele.length, filter_df, show.filter.output)
-```
-
-```{r}
-#Filter by mispaired reads
-#drops SNPs in which all the reads supporting the reference allele are paired but not supporting the alternate allele
-filter_df <- filter_mispaired(working_dir, project_name, vcf_file, filter_df, show.filter.output)
-```
-
-```{r}
-#Filter by quality : depth ratio
-#drops SNPS with a quality score:depth ratio lower than this threshold (DEFAULT=.25)
-#this removes low quality, high depth SNPs e.g. loci that were likely overgrouped
-quality.depth.ratio <- .25 
-filter_df <- filter_qualdepth(working_dir, project_name, vcf_file, quality.depth.ratio, filter_df, show.filter.output)
-```
-
-```{r}
-#dDocent filtering based on mean depth per site vs. quality score
-#helps filter out true variants vs false variants
-filter_df <- filter_ddocent(working_dir, project_name, vcf_file, filter_df, show.filter.output)
 ```
 
 ```{r}
 #Use the histogram below to help choose a maximum mean depth cutoff - try to reduce trailing tail
 #NOTE - histogram generation requires minimum depth filter + ddocent filter to be run previously
-depths <- read.table("F5.DEPTH")
-ggplotly(ggplot(data=depths) + geom_histogram(aes(x=depths$V1/max.missing), binwidth=10) + xlab("Mean Depth") + ylab("# SNPs") + theme_bw())
+
+snp_hist(depth_table="F5.DEPTH")
+
+#dDocent filtering based on mean depth per site vs. quality score
+#helps filter out true variants vs false variants
+ddocent_filter <- T
+
+
+
+
 ```
 
 ```{r}
-#Filter by maximum mean depth
-max.mean.depth.threshold <- 500 #helps remove paralogs and multicopy loci
-filter_df <- filter_maxmeandepth(working_dir, project_name, vcf_file, max.mean.depth.threshold, filter_df, show.filter.output)
-#try re-running the histogram above to see changes
+#thins sites to evaluate SNPs at a minimum distance apart (in bp, DEFAULT=300)
+#helps avoid linked loci (set to 1 to turn off)
+thinning.threshold <- 5
+
+filtering_results <- filter_thinning(working_dir=working_dir,
+                project_name=project_name,
+                vcf_file=vcf_file,
+                x=thinning.threshold,
+                filter_df)
+                
+#run_ddocentErrorCount(working_dir, vcf_file)
+
+
 ```
 
 ### Filtering visualization (OPTIONAL)
 Summary of # SNPs retained after each individual filtering step.
 ```{r}
-#Number of SNPs kept after each filter applied
-filter_df$Filter_f <- factor(filter_df$Filter, levels=unique(filter_df$Filter))
-filter_df$SNPs_f <- as.numeric(as.character(filter_df$SNPs)); options(scipen = 999)
-ggplotly(ggplot(data=filter_df) + geom_bar(aes(x=Filter_f, y=SNPs_f), stat="identity") + theme_bw() + theme(axis.text.x = element_text(angle = -70, hjust=-0.1), plot.title = element_text(hjust = 0.5)) + ggtitle("Number of SNPs after each filter") + xlab("\nFilter") + ylab("\n# SNPs"))
-filter_df$Filter_f <- NULL; filter_df$SNPs_f <- NULL
+#Number of SNPs kept after each filter applied (wrangled)
+#TODO OVERHAUL THIS TOMORROW
+
+#save filtering
+write.csv(filter_df, paste0(working_dir,"/", project_name, "/output/filtering.csv"), row.names = F)
+
+#wrangle filering out
+filter_for_plot <- read.csv(paste0(working_dir,"/", project_name, "/output/filtering.csv"))
+
+filter_for_plot <- filter_df
+
+filter_for_plot <- filter_for_plot %>% dplyr::select(filter, SNPs) %>% 
+                        mutate(Filter=factor(filter, levels=unique(filter_for_plot$filter)), SNPs=as.numeric(SNPs)) %>%
+                        mutate(SNPs_filtered = -(SNPs - lag(SNPs, fill=0, type="shift"))) %>% 
+                        replace(is.na(.), 0) %>% 
+                        mutate(cum_filtered = cumsum(SNPs_filtered)) %>% 
+                        mutate(prop_filtered = (SNPs_filtered) / lag(SNPs) ) %>%
+                        mutate(cum_prop_filtered = (cum_filtered) / SNPs[1]) %>% replace(is.na(.), 0)
+
+
+#generate plot output
+snps_fig <- ggplot(data=filter_for_plot) + geom_bar(aes(x=filter, y=SNPs, fill=SNPs_filtered), stat="identity") + 
+    theme(axis.text.x = element_text(angle = -30, hjust=-0.1),
+        axis.title.x = element_text(margin = margin(t = -20)),
+        plot.title = element_text(hjust = 0.5),
+        plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm")) +
+    ggtitle("Number of SNPs after each filter") +
+    xlab("\nFilter") + ylab("\n# SNPs") + labs(fill="SNPs\nFiltered") + viridis::scale_fill_viridis()
+  
+  #generate plot output
+snps_prop_fig <-   ggplot(data=filter_for_plot) + geom_bar(aes(x=filter, y=SNPs, fill=prop_filtered), stat="identity") + 
+    theme(axis.text.x = element_text(angle = -30, hjust=-0.1),
+        axis.title.x = element_text(margin = margin(t = -20)),
+        plot.title = element_text(hjust = 0.5),
+        plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm")) +
+    ggtitle("Number of SNPs after each filter") +
+    xlab("\nFilter") + ylab("\n# SNPs") + labs(fill="Proportion \nFiltered") + viridis::scale_fill_viridis()
+  
+  #generate plot output
+snps_cumprop_fig <- ggplot(data=filter_for_plot) + geom_bar(aes(x=filter, y=SNPs, fill=cum_prop_filtered), stat="identity") + 
+    theme(axis.text.x = element_text(angle = -30, hjust=-0.1),
+          axis.title.x = element_text(margin = margin(t = -20)),
+          plot.title = element_text(hjust = 0.5),
+          plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm",)) +
+    ggtitle("Number of SNPs after each filter") +
+    xlab("\nFilter") + ylab("\n# SNPs") + labs(fill="Cumulative \nProportion \nFiltered") + viridis::scale_fill_viridis()
+
+
+
+#create output folder
+#quick bash line to create project dir if not already created  
+    system(paste0("if [ ! -d ",paste0(working_dir,"/",project_name)," ]; then mkdir ",paste0(working_dir,"/",project_name),
+                  "; else echo \"\nWarning: Project directory already exists - may overwrite files.\"; fi"))
+
+#plot figures
+ggplotly(snps_fig);ggplotly(snps_prop_fig);ggplotly(snps_cumprop_fig)    
+    
+png(filename=paste0(working_dir,"/", project_name, "/output/filtering_snps_fig.png"), width=6, height=3.5, unit="in", res = 1200)
+  snps_fig
+  dev.off()
+
+png(filename=paste0(working_dir,"/", project_name, "/output/filtering_snps_prop_fig.png"), width=6, height=3.5, unit="in", res = 1200)
+  snps_prop_fig
+  dev.off()
+
+png(filename=paste0(working_dir,"/", project_name, "/output/filtering_snps_cumprop_fig.png"), width=6, height=3.5, unit="in", res = 1200)
+  snps_cumprop_fig
+  dev.off()
+
+for(i in c("snps_fig","snps_prop_fig","snps_cumprop_fig")){
+  ggplotly(get(i))
+  png(filename=paste0(working_dir,"/", project_name, "/output/filtering_",i,".png"), width=6, height=3.5, unit="in", res = 1200)
+    get(i)
+  dev.off()
+}
+
 ```
 
 ### Run Pre-Analysis Setup
@@ -246,18 +404,24 @@ Takes parameters above and runs the script *preAnalysis.R*. This script reads th
 **NOTE - depending on number of pools and SNPs, this step may take a while!**
   
 ```{r PreAnalysisRun, warning=TRUE}
-
 #runs pre-analysis
+
+samples(scanVcfHeader(vcf_file))
+#used `bcftools reheader -s <txt file of samples> -o <out.vcf> -i <in.vcf>
+system(paste0("bcftools reheader -s ", project_name, "_fixed_samples.txt -o", project_name, "_reheader.vcf final_filter_", vcf_file))
+filtered_reheadered_vcf_file <- paste0(project_name,"_reheader.vcf")
+samples(scanVcfHeader(filtered_reheadered_vcf_file))
+
 pa_list_out <- preAnalysis(working_dir=working_dir, 
                                project_name=project_name, 
-                               POPS=NULL, 
-                               vcf_file=vcf_file, 
+                               POPS=POPS, 
+                               vcf_file=filtered_reheadered_vcf_file, 
                                ref_file=ref_file)
     
 #returns master dataframe and stacked dataframe
 as <- pa_list_out$as 
 as.st <- pa_list_out$as.st 
-POPS <- pa_list_out$POPS 
+POPS <- pa_list_out$POPS
 popcomb <- pa_list_out$popcomb 
 project_name <- pa_list_out$project_name
 
@@ -280,8 +444,10 @@ min_cov <- 2 #minimum coverage (in ALL populations) (DEFAULT=2)
 max_cov <- 1000 #maximum coverage, provide either a single value or a vector of maximum values per population (DEFAULT=1000)
 #vector example for three populations:
 #max_cov <- c(500, 600, 700)
-window_size <- 1 #set to 1 for SNP-specific FST calculation
-pool_size <- c(40,40)
+window_size <- 10 #set to 1 for SNP-specific FST calculation
+pool_size <- c(30) #vector of all pool sizes (one value if all pools are the same size)
+POPS
+#pool_size <- c(51,46,57,24,47,57,47,44,40,50)
  #number of individuals per pool, provide either a single value or a vector of individuals per pool
 #vector example for three populations:
 #pool_size <- c(53, 57, 46)
@@ -289,11 +455,9 @@ pool_size <- c(40,40)
 
 #parallel options
 use_parallel <- TRUE #set to FALSE if not using GNU parallel
-no_cores <- 20 #number of cores to use for analysis (try not to use max)
+no_cores <- parallel::detectCores()-1 #number of cores to use for analysis (try not to use max)
 
-#sudo options for perl module
 use_sudo <- T #use sudo permissions to install "Text::NSP::Measures::2D::Fisher::twotailed" perl module for popoolation2
-
 ```
 
 ### Calculate Pairwise Fst
@@ -330,11 +494,11 @@ Set parameters for post-PoPoolation analysis: FST cutoff, p-value cutoff, and de
 ```{r AnalysisParameters}
 #an FST value between 0 and 1 considered strong differentiation
 #NOTE - will only affect output files, not calculations (DEFAULT=0.5)
-strong_diff <- 0.5
+strong_diff <- 0.75
 
 #a p-value cutoff for Fisher's Exact Test between 0 and 1 
 #NOTE - will only affect output files, not calculations (DEFAULT=0.01)
-p_cutoff <- 0.01
+p_cutoff <- 0.05
 
 #if set to true, will pull contig sequences and create FASTA files for
 #strongly differentiated and alternatively fixed sites. 
@@ -343,9 +507,12 @@ fasta_generation <- TRUE
 #minimum coverage levels to use for analysis series
 #coverage will go from the min to the max by the step, e.g.
 #first_mincov=5, last_mincov=75, cov_step=5 will produce analyses for 5x, 10x, 15x...70x, 75x
-first_mincov=5
-last_mincov=75
+first_mincov=10
+last_mincov=40
 cov_step=5
+
+lowP_removal=F
+include_called_allpops=T #include if only SNPs in all pairs to be included
 ```
 
 ### Summarize PoolSeq Analysis 
@@ -368,115 +535,48 @@ Outputs following summary files in "output/":
 
 ```{r AnalysisRun, warning=FALSE}
 
-if("popoolation" %in% fst.calc){
-  setwd(paste(working_dir, project_name, "popoolation", sep="/"))
-  
-  if (length(list.files(pattern=".fst"))==0 & length(list.files(pattern=".fet"))==0){
-    message("\n\nERROR: No .fst/.fet PoPoolation2 output files found. Please run PoPoolation2.")
-  } else {
-    if (length(list.files(pattern=".fst"))>0 & length(list.files(pattern=".fet"))>0){ filetype = c(".fst",".fet")
-    }else if(length(list.files(pattern=".fst"))>0 & length(list.files(pattern=".fet"))==0){ filetype = c(".fst")
-    }else if (length(list.files(pattern=".fst"))==0 & length(list.files(pattern=".fet"))>0){ filetype = c(".fet")}
-    
-    pa_list_out <- postFST(fst.calc="popoolation",
-                           filetype=filetype,
-                           project_name=project_name,
-                           as=as, 
-                           popcomb=popcomb, 
-                           strong_diff=strong_diff,
-                           p_cutoff=p_cutoff,
-                           fasta_generation=fasta_generation,
-                           ref_file=ref_file,
-                           first_mincov=first_mincov,
-                           last_mincov=last_mincov,
-                           cov_step=cov_step)
-    
-    #extract needed data from return values
-    cov.allpairs.table.total_popoolation <- pa_list_out$cov.allpairs.table.total
-    cov.perpair.table.total_popoolation <- pa_list_out$cov.perpair.table.total
-    cov.allpairs.table.allpools_popoolation <- pa_list_out$cov.allpairs.table.allpools
-    cov.perpair.table.allpools_popoolation <- pa_list_out$cov.perpair.table.allpools
-    postpop.master.long_popoolation <- pa_list_out$postpop.master.long
-    postpop.master.long.allpools_popoolation <- pa_list_out$postpop.master.long.allpools
-      
-  }
-}
+get_popoolation_out(working_dir, project_name, fst.calc="popoolation")
+get_poolfstat_out(working_dir, project_name, fst.calc="poolfstat")
 
-if("poolfstat" %in% fst.calc){
-setwd(paste(working_dir, project_name, "poolfstat", sep="/"))
+wrangle_out(working_dir, project_name, fst.calc=fst.calc)
 
-if (length(list.files(pattern=".fst"))==0){
-  message("\n\nERROR: No .fst/.fet PoPoolation2 output files found. Please run PoPoolation2.")
-} else {
-  filetype = c(".fst")}
-  
-  pa_list_out <- postFST(fst.calc="poolfstat",
-                           filetype=filetype,
-                           project_name=project_name,
-                           as=as, 
-                           popcomb=popcomb, 
-                           strong_diff=strong_diff,
-                           p_cutoff=p_cutoff,
-                           fasta_generation=fasta_generation,
-                           ref_file=ref_file,
-                           first_mincov=first_mincov,
-                           last_mincov=last_mincov,
-                           cov_step=cov_step)
-  
-  #extract needed data from return values
-  cov.allpairs.table.total_poolfstat <- pa_list_out$cov.allpairs.table.total
-  cov.perpair.table.total_poolfstat <- pa_list_out$cov.perpair.table.total
-  cov.allpairs.table.allpools_poolfstat <- pa_list_out$cov.allpairs.table.allpools
-  cov.perpair.table.allpools_poolfstat <- pa_list_out$cov.perpair.table.allpools
-  postpop.master.long_poolfstat <- pa_list_out$postpop.master.long
-  postpop.master.long.allpools_poolfstat <- pa_list_out$postpop.master.long.allpools
-    
-}
+#write out contigs based on fst
+# fixed_names <- unique(filter(postpop.master.wide_pf, MinCoverage == 30, .fst >= 1)$CHROM)
+# diff_names <- unique(filter(postpop.master.wide_pf, MinCoverage == 30, .fst >= 0.5)$CHROM)
+# nf_names <- unique(filter(postpop.master.wide_pf, MinCoverage == 30, .fst >= 0.9)$CHROM)
+# all_names <- unique(filter(postpop.master.wide_pf, MinCoverage == 30)$CHROM)
+# 
+# write.table(fixed_names, file = paste(working_dir,project_name, "output", "fixed_names.txt", sep="/"), sep = "\n", row.names = F, col.names = F, quote = F)
+# write.table(diff_names, file = "/data/evan/assessPool/tilapia_spades/output/poolfstat/diff_names.txt", sep = "\n", row.names = F, col.names = F, quote=F)
+# write.table(all_names, file = "/data/evan/assessPool/tilapia_spades/output/poolfstat/all_names.txt", sep = "\n", row.names = F, col.names = F, quote=F)
+# write.table(nf_names, file = "/data/evan/assessPool/tilapia_spades/output/poolfstat/nf_names.txt", sep = "\n", row.names = F, col.names = F, quote=F)
+
 
 ```
 
 ### Summary Visualization By Coverage, sites called in all sites and in all pools
 Number of SNPs, Number of Contigs, Mean # SNPs per contigs, Mean FST, SD FST for all sites (total) and all sites
 ```{r SummaryAllPools, Summary AllSites}
-if("popoolation" %in% fst.calc){
-    allpairs_summary_plot(cov.allpairs.table.total = cov.allpairs.table.total_popoolation, cov.allpairs.table.allpools = cov.allpairs.table.allpools_popoolation)
-}
-if("poolfstat" %in% fst.calc){
-    allpairs_summary_plot(cov.allpairs.table.total = cov.allpairs.table.total_poolfstat, cov.allpairs.table.allpools = cov.allpairs.table.allpools_poolfstat)
-}
+allpairs_summary_plot(cov.allpairs.table.total = cov.allpairs.table.total_popoolation, 
+                      cov.allpairs.table.allpools = cov.allpairs.table.allpools_popoolation,
+                      title.text = "PoPoolation2")
+allpairs_summary_plot(cov.allpairs.table.total = cov.allpairs.table.total_poolfstat, 
+                      cov.allpairs.table.allpools = cov.allpairs.table.allpools_poolfstat,
+                      title.text = "{poolfstat}")
 ```
 
-
-### Wrangling for figures
-```{r}
-if("popoolation" %in% fst.calc){
-    postpop.master.wide_pp <- spread(postpop.master.long_popoolation, analysis, value)
-    postpop.master.wide_pp$pair <- gsub(paste0(project_name,"_"), "", postpop.master.wide_pp$pair) 
-    postpop.master.wide_pp <- separate(postpop.master.wide_pp, pair, c("popA","popB"), sep="_", remove=F)
-
-    cov.perpair.table.total_pp <- cov.perpair.table.total_popoolation[order(cov.perpair.table.total_popoolation$MinCoverage),]
-    cov.perpair.table.total_pp <- separate(cov.perpair.table.total_pp, pair, c("popA","popB"), sep="_", remove=F)
-    cov.perpair.table.total_pp$NumSNPs <- as.numeric(cov.perpair.table.total_pp$NumSNPs)
-    cov.perpair.table.total_pp$NumContigs <- as.numeric(cov.perpair.table.total_pp$NumContigs)
-    cov.perpair.table.total_pp$pair <- as.character(cov.perpair.table.total_pp$pair)
-}
-
-if("poolfstat" %in% fst.calc){
-    postpop.master.wide_pf <- spread(postpop.master.long_poolfstat, analysis, value)
-    postpop.master.wide_pf$pair <- gsub(paste0(project_name,"_"), "", postpop.master.wide_pf$pair) 
-    postpop.master.wide_pf <- separate(postpop.master.wide_pf, pair, c("popA","popB"), sep="_", remove=F)
-
-    cov.perpair.table.total_pf <- cov.perpair.table.total_poolfstat[order(cov.perpair.table.total_poolfstat$MinCoverage),]
-    cov.perpair.table.total_pf <- separate(cov.perpair.table.total_pf, pair, c("popA","popB"), sep="_", remove=F)
-    cov.perpair.table.total_pf$NumSNPs <- as.numeric(cov.perpair.table.total_pf$NumSNPs)
-    cov.perpair.table.total_pf$NumContigs <- as.numeric(cov.perpair.table.total_pf$NumContigs)
-    cov.perpair.table.total_pf$pair <- as.character(cov.perpair.table.total_pf$pair)
-}
+### Summary visualization by coverage and comparison, all sites
+```{r PairwiseSummaryAllSites}
+# ggplotly(ggplot(cov.perpair.table.total, aes(x=MeanFST, y=pair, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.total, aes(x=MeanFST, y=pair, colour=MinCoverage)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + coverage") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.total, aes(x=MinCoverage, y=MeanFST, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.total, aes(x=MinCoverage, y=MeanFST, colour=pair)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + comparison") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.total, aes(x=MinCoverage, y=log(NumSNPs), colour=pair)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Log # SNPs") + ggtitle("# SNPs by coverage + comparison") + theme(plot.title = element_text(hjust = 0.5)))
 ```
 
 ```{r}
-if("popoolation" %in% fst.calc){
- cov.perpair.table.total_pp %>%
+#TODO new error about factor levels - make all "pair" variables into character
+ cov.perpair.table.total_popoolation %>%
   plot_ly(
     x = ~MeanFST, 
     y = ~pair, 
@@ -488,13 +588,12 @@ if("popoolation" %in% fst.calc){
     mode = 'markers',
     marker = list(size = 12)
   ) %>%
-  layout(margin=list(l = 100, r = 20, b = 10, t = 10)) %>%
-  layout(yaxis = list(tickangle=-35,tickfont=list(size=12))) %>%
-  layout(xaxis = list(tickfont=list(size=12)))
-}
+  layout(margin=list(l = 100, r = 20, b = 10, t = 30),
+         yaxis = list(tickangle=-35,tickfont=list(size=12)),
+         xaxis = list(tickfont=list(size=12)),
+         title = list(text="PoPoolation2", y=0.95))
 
-if("poolfstat" %in% fst.calc){
- cov.perpair.table.total_pf %>%
+ cov.perpair.table.total_poolfstat %>%
   plot_ly(
     x = ~MeanFST, 
     y = ~pair, 
@@ -506,16 +605,25 @@ if("poolfstat" %in% fst.calc){
     mode = 'markers',
     marker = list(size = 12)
   ) %>%
-  layout(margin=list(l = 100, r = 20, b = 10, t = 10)) %>%
-  layout(yaxis = list(tickangle=-35,tickfont=list(size=12))) %>%
-  layout(xaxis = list(tickfont=list(size=12)))
-}
+  layout(margin=list(l = 100, r = 20, b = 10, t = 30),
+         yaxis = list(tickangle=-35,tickfont=list(size=12)),
+         xaxis = list(tickfont=list(size=12)),
+         title = list(text="{poolfstat}", y=0.95))
+```
+
+
+### Summary visualization by coverage and comparison, sites called in all pools
+```{r PairwiseSummaryAllPools}
+# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MeanFST, y=pair, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MeanFST, y=pair, colour=MinCoverage)) + geom_point() + theme_bw() + xlab("Mean FST") + ylab("Pair") + ggtitle("Mean FST by comparison + coverage") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MinCoverage, y=MeanFST, colour=NumSNPs)) + geom_point() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + # SNPs") + theme(plot.title = element_text(hjust = 0.5)))
+# ggplotly(ggplot(cov.perpair.table.allpools, aes(x=MinCoverage, y=MeanFST, colour=pair)) + geom_point() + geom_line() + theme_bw() + xlab("Coverage") + ylab("Mean FST") + ggtitle("Mean FST by coverage + comparison") + theme(plot.title = element_text(hjust = 0.5)))
 ```
 
 ### Pairwise mean F~ST~ by coverage
 
 ```{r}
-if("popoolation" %in% fst.calc){
+if(include_called_allpops){
  cov.perpair.table.allpools_popoolation %>%
   plot_ly(
     x = ~MeanFST, 
@@ -528,12 +636,11 @@ if("popoolation" %in% fst.calc){
     mode = 'markers',
     marker = list(size = 12)
   ) %>%
-  layout(margin=list(l = 100, r = 20, b = 10, t = 10)) %>%
-  layout(yaxis = list(tickangle=-35,tickfont=list(size=12))) %>%
-  layout(xaxis = list(tickfont=list(size=12)))
-}
+  layout(margin=list(l = 100, r = 20, b = 10, t = 30),
+         yaxis = list(tickangle=-35,tickfont=list(size=12)),
+         xaxis = list(tickfont=list(size=12)),
+         title = list(text="PoPoolation2", y=0.95))
 
-if("poolfstat" %in% fst.calc){
  cov.perpair.table.allpools_poolfstat %>%
   plot_ly(
     x = ~MeanFST, 
@@ -546,16 +653,18 @@ if("poolfstat" %in% fst.calc){
     mode = 'markers',
     marker = list(size = 12)
   ) %>%
-  layout(margin=list(l = 100, r = 20, b = 10, t = 10)) %>%
-  layout(yaxis = list(tickangle=-35,tickfont=list(size=12))) %>%
-  layout(xaxis = list(tickfont=list(size=12)))
+  layout(margin=list(l = 100, r = 20, b = 10, t = 30),
+         yaxis = list(tickangle=-35,tickfont=list(size=12)),
+         xaxis = list(tickfont=list(size=12)),
+         title = list(text="{poolfstat}", y=0.95))
+} else {
+  message("SNPs shared in all pools not selected. Please change \"include_called_allpools\" variable to TRUE and re-run {AnalysisRun} chunk")
 }
 ```
 
 ### Locus-by-locus F~ST~
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
-if("popoolation" %in% fst.calc){
 postpop.master.wide_pp %>%
   plot_ly(
     x = ~.fst, 
@@ -567,12 +676,11 @@ postpop.master.wide_pp %>%
     type = 'box'
     #mode = 'markers'
   ) %>%
-  layout(margin=list(l = 200, r = 20, b = 80, t = 10)) %>%
-  layout(yaxis = list(tickangle=-35,tickfont=list(size=18))) %>%
-  layout(xaxis = list(tickfont=list(size=18)))
-}
+  layout(margin=list(l = 200, r = 20, b = 80, t = 40),
+         yaxis = list(tickangle=-35,tickfont=list(size=18)),
+         xaxis = list(tickfont=list(size=18)),
+         title = list(text="PoPoolation2", y=0.95))
 
-if("poolfstat" %in% fst.calc){
 postpop.master.wide_pf %>%
   plot_ly(
     x = ~.fst, 
@@ -587,44 +695,69 @@ postpop.master.wide_pf %>%
   layout(margin=list(l = 200, r = 20, b = 80, t = 10)) %>%
   layout(yaxis = list(tickangle=-35,tickfont=list(size=18))) %>%
   layout(xaxis = list(tickfont=list(size=18)))
-}
 ```
 
 ### FST heatmap parameters
 Choose a coverage cutoff and whether to only include sites called in all pools for heatmap generation.
 ```{r FSTHeatmaps}
+
+#TODO color scales on heat map
 #pick a heatmap coverage based on summary plots above
-heatmap_cov <- 40
+heatmap_cov <- 30
+#pool_order <- POPS
+pool_order <- c("KURE",
+                 "MID",
+                 "PH",
+                 "LAY",
+                "LIS",
+                 "MAR",
+                "NIH",
+                 "OAHU-O",
+                "OAHU-R",
+                 "MAUI")
+pool_order <- rev(pool_order)
 
 #include only SNPs called in all pools?
 all_pools <- FALSE
 
-if("popoolation" %in% fst.calc){
   if (all_pools){ postpop <- postpop.master.long.allpools_popoolation
-  } else{ postpop <- postpop.master.long_popoolation }
+  } else { postpop <- postpop.master.long_popoolation }
   hm_list_out <- poolHeatmaps(heatmap_cov=heatmap_cov, postpop=postpop, fst.calc = 'popoolation')
   fst <- as.matrix(hm_list_out$fst)
+  fst <- fst[pool_order,pool_order]
   chisq <- as.matrix(hm_list_out$chisq)
+  chisq <- chisq[pool_order,pool_order]
   plot_ly(z = as.matrix(fst), colors = colorRamp(c("yellow", "red")), x = colnames(fst), y=rownames(fst), type = "heatmap",
-        colorbar = list(title = "FST")) %>% layout(margin=list(l = 100, r = 20, b = 80, t = 10)) %>% layout(yaxis = list(tickangle=0,tickfont=list(size=18))) %>%  layout(xaxis = list(tickfont=list(size=18))) 
+        colorbar = list(title = "FST")) %>% 
+    layout(margin=list(l = 100, r = 20, b = 80, t = 45),
+           yaxis = list(tickangle=0,tickfont=list(size=18)),
+           xaxis = list(tickfont=list(size=18)),
+           title = list(text=paste0("Montipora capitata"), y=0.95))
+  
   plot_ly(z = as.matrix(chisq), colors = colorRamp(c("yellow", "red")), x = colnames(chisq), y=rownames(chisq), type = "heatmap",
-        colorbar = list(title = "Chi-Squared")) %>% layout(margin=list(l = 100, r = 20, b = 80, t = 10)) %>% layout(yaxis = list(tickangle=0,tickfont=list(size=18))) %>%  layout(xaxis = list(tickfont=list(size=18)))
+        colorbar = list(title = "Chi-Squared")) %>%
+       layout(margin=list(l = 100, r = 20, b = 80, t = 45),
+           yaxis = list(tickangle=0,tickfont=list(size=18)),
+           xaxis = list(tickfont=list(size=18)),
+           title = list(text=paste0("Montipora capitata - PoPoolation2"), y=0.95))
   #hc.rows <- hclust(dist(fst))
   #hc.cols <- hclust(dist(t(fst)))
   #heatmap(fst)
-}
 
-if("poolfstat" %in% fst.calc){
   if (all_pools){ postpop <- postpop.master.long.allpools_poolfstat
   } else{ postpop <- postpop.master.long_poolfstat }
   hm_list_out <- poolHeatmaps(heatmap_cov=heatmap_cov, postpop=postpop, fst.calc = 'poolfstat')
   fst <- as.matrix(hm_list_out$fst)
+  fst <- fst[pool_order,pool_order]
   plot_ly(z = as.matrix(fst), colors = colorRamp(c("yellow", "red")), x = colnames(fst), y=rownames(fst), type = "heatmap",
-        colorbar = list(title = "FST")) %>% layout(margin=list(l = 100, r = 20, b = 80, t = 10)) %>% layout(yaxis = list(tickangle=0,tickfont=list(size=18))) %>%  layout(xaxis = list(tickfont=list(size=18)))
+        colorbar = list(title = "FST")) %>% 
+    layout(margin=list(l = 100, r = 20, b = 80, t = 45),
+           yaxis = list(tickangle=0,tickfont=list(size=18)),
+           xaxis = list(tickfont=list(size=18)),
+           title = list(text=paste0("Montipora capitata - {poolfstat}"), y=0.95))
   #hc.rows <- hclust(dist(fst))
   #hc.cols <- hclust(dist(t(fst)))
   #heatmap(fst)
-}
 
 ```
 ### Map setup **NOT STABLE**
@@ -633,8 +766,8 @@ if("poolfstat" %in% fst.calc){
 #vectors for spatial data
 pop <- POPS
 name <- c("Kure Atoll", "Laysan Isalnd", "Lisianski Island", "Maro Reef", "Maui Island", "Midway Atoll", "Nihoa Isalnd", "Oahu (orange)", "Pearl and Hermes Atoll", "Oahu (red)")
-lat <- c(28.3925, 25.7679, 26.0662, 25.4150, 20.7984, 28.2072, 23.0605, 21.4399, 27.8333, 21.4379)
-long <- c(-178.2936, -171.7322, -173.9665, -170.5900, -156.3319, -177.3735, -161.9218, -158.0001, -175.8333, -158.0001)
+lats <- c(28.3925, 25.7679, 26.0662, 25.4150, 20.7984, 28.2072, 23.0605, 21.4399, 27.8333, 21.4379)
+longs <- c(-178.2936, -171.7322, -173.9665, -170.5900, -156.3319, -177.3735, -161.9218, -158.0001, -175.8333, -158.0001)
 
 spatdat <- data.frame(pop, name, lats, longs)
 
