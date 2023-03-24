@@ -324,10 +324,13 @@ write.csv(filtering_results, paste0(working_dir,"/", project_name, "/output/filt
 #wrangle filering out
 filtering_results <- read.csv(paste0(working_dir,"/", project_name, "/output/filtering.csv"))
 
+filter_for_plot <- filtering_results %>% dplyr::select(filter, SNPs) %>% 
+                      arrange(desc(SNPs), filter) %>% 
+                        mutate(prop_filtered = 1 - ( (SNPs) / SNPs[1] ))
 
 
 #generate plot output
-snps_fig <- ggplot(data=filter_for_plot) + geom_bar(aes(x=filter, y=SNPs, fill=SNPs_filtered), stat="identity") + 
+snps_fig <- ggplot(data=filter_for_plot) + geom_bar(aes(x=reorder(filter,-SNPs), y=SNPs, fill=SNPs), stat="identity") + 
     theme(axis.text.x = element_text(angle = -30, hjust=-0.1),
         axis.title.x = element_text(margin = margin(t = -20)),
         plot.title = element_text(hjust = 0.5),
@@ -336,22 +339,13 @@ snps_fig <- ggplot(data=filter_for_plot) + geom_bar(aes(x=filter, y=SNPs, fill=S
     xlab("\nFilter") + ylab("\n# SNPs") + labs(fill="SNPs\nFiltered") + viridis::scale_fill_viridis()
   
   #generate plot output
-snps_prop_fig <-   ggplot(data=filter_for_plot) + geom_bar(aes(x=filter, y=SNPs, fill=prop_filtered), stat="identity") + 
+snps_prop_fig <-   ggplot(data=filter_for_plot) + geom_bar(aes(x=reorder(filter,-SNPs), y=SNPs, fill=prop_filtered), stat="identity") + 
     theme(axis.text.x = element_text(angle = -30, hjust=-0.1),
         axis.title.x = element_text(margin = margin(t = -20)),
         plot.title = element_text(hjust = 0.5),
         plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm")) +
     ggtitle("Number of SNPs after each filter") +
     xlab("\nFilter") + ylab("\n# SNPs") + labs(fill="Proportion \nFiltered") + viridis::scale_fill_viridis()
-  
-  #generate plot output
-snps_cumprop_fig <- ggplot(data=filter_for_plot) + geom_bar(aes(x=filter, y=SNPs, fill=cum_prop_filtered), stat="identity") + 
-    theme(axis.text.x = element_text(angle = -30, hjust=-0.1),
-          axis.title.x = element_text(margin = margin(t = -20)),
-          plot.title = element_text(hjust = 0.5),
-          plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm",)) +
-    ggtitle("Number of SNPs after each filter") +
-    xlab("\nFilter") + ylab("\n# SNPs") + labs(fill="Cumulative \nProportion \nFiltered") + viridis::scale_fill_viridis()
 
 
 
@@ -361,7 +355,7 @@ snps_cumprop_fig <- ggplot(data=filter_for_plot) + geom_bar(aes(x=filter, y=SNPs
                   "; else echo \"\nWarning: Project directory already exists - may overwrite files.\"; fi"))
 
 #plot figures
-ggplotly(snps_fig);ggplotly(snps_prop_fig);ggplotly(snps_cumprop_fig)    
+ggplotly(snps_fig);ggplotly(snps_prop_fig)  
     
 png(filename=paste0(working_dir,"/", project_name, "/output/filtering_snps_fig.png"), width=6, height=3.5, unit="in", res = 1200)
   snps_fig
@@ -371,11 +365,7 @@ png(filename=paste0(working_dir,"/", project_name, "/output/filtering_snps_prop_
   snps_prop_fig
   dev.off()
 
-png(filename=paste0(working_dir,"/", project_name, "/output/filtering_snps_cumprop_fig.png"), width=6, height=3.5, unit="in", res = 1200)
-  snps_cumprop_fig
-  dev.off()
-
-for(i in c("snps_fig","snps_prop_fig","snps_cumprop_fig")){
+for(i in c("snps_fig","snps_prop_fig")){
   ggplotly(get(i))
   png(filename=paste0(working_dir,"/", project_name, "/output/filtering_",i,".png"), width=6, height=3.5, unit="in", res = 1200)
     get(i)
