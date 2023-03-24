@@ -305,7 +305,7 @@ filtering_results <- filter_thinning(working_dir=working_dir,
                 project_name=project_name,
                 vcf_file=vcf_file,
                 x=thinning.threshold,
-                filter_df)
+                post_filter_df)
                 
 #run_ddocentErrorCount(working_dir, vcf_file)
 
@@ -316,23 +316,14 @@ filtering_results <- filter_thinning(working_dir=working_dir,
 Summary of # SNPs retained after each individual filtering step.
 ```{r}
 #Number of SNPs kept after each filter applied (wrangled)
-#TODO OVERHAUL THIS TOMORROW
+#TODO OVERHAUL 
 
 #save filtering
-write.csv(filter_df, paste0(working_dir,"/", project_name, "/output/filtering.csv"), row.names = F)
+write.csv(filtering_results, paste0(working_dir,"/", project_name, "/output/filtering.csv"), row.names = F)
 
 #wrangle filering out
-filter_for_plot <- read.csv(paste0(working_dir,"/", project_name, "/output/filtering.csv"))
+filtering_results <- read.csv(paste0(working_dir,"/", project_name, "/output/filtering.csv"))
 
-filter_for_plot <- filter_df
-
-filter_for_plot <- filter_for_plot %>% dplyr::select(filter, SNPs) %>% 
-                        mutate(Filter=factor(filter, levels=unique(filter_for_plot$filter)), SNPs=as.numeric(SNPs)) %>%
-                        mutate(SNPs_filtered = -(SNPs - lag(SNPs, fill=0, type="shift"))) %>% 
-                        replace(is.na(.), 0) %>% 
-                        mutate(cum_filtered = cumsum(SNPs_filtered)) %>% 
-                        mutate(prop_filtered = (SNPs_filtered) / lag(SNPs) ) %>%
-                        mutate(cum_prop_filtered = (cum_filtered) / SNPs[1]) %>% replace(is.na(.), 0)
 
 
 #generate plot output
