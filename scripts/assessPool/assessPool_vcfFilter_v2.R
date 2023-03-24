@@ -321,9 +321,10 @@ system(paste("bash ", paste(working_dir,project_name,"run_filter_wrapper.sh",sep
 #Save # SNPs to filtering log
 numSNPs <- system(paste("grep -v '#'", paste0("filtered_",vcf_file), "| wc -l", sep=" "), intern=T)
 tmp_fdf <- data.frame(filter=as.character(paste("all_filters",sep="_")),arg=as.character(paste("NA")), SNPs=as.numeric(numSNPs))
-fdf <- dplyr::full_join(filter_df, tmp_fdf)
+post_filter_df <<- dplyr::full_join(filter_df, tmp_fdf)
 return(fdf)        
 }
+
 
 
 
