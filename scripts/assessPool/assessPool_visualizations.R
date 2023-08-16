@@ -2,7 +2,8 @@ allpairs_summary_plot <-
   function(cov.allpairs.table.total,
            cov.allpairs.table.allpools,
            title.text) {
-    if(is.na(cov.allpairs.table.allpools)){
+    
+    if(exists("cov.allpairs.table.allpools")){
       
       allpairs_summary_plot <-
         
@@ -315,4 +316,42 @@ allpairs_summary_plot <-
       allpairs_summary_plot
     }
 
+  }
+
+all_loci_distribution_plot <- function(data_in, title.text){
+  data_in %>%
+    plot_ly(
+      x = ~.fst, 
+      y = ~pair, 
+      color = ~popA,
+      frame = ~MinCoverage, 
+      #text = ~pair, 
+      hoverinfo = ~.fst,
+      type = 'box'
+      #mode = 'markers'
+    ) %>%
+    layout(margin=list(l = 200, r = 20, b = 80, t = 40),
+           yaxis = list(tickangle=-35,tickfont=list(size=18)),
+           xaxis = list(tickfont=list(size=18)),
+           title = list(text=title.text, y=0.95))
+}
+
+
+pairwise_fst_by_cov <- function(data_in, title.text){
+  data_in %>%
+    plot_ly(
+      x = ~MeanFST, 
+      y = ~pair, 
+      color = ~NumSNPs,
+      frame = ~MinCoverage, 
+      text = ~NumContigs, 
+      hoverinfo = ~pair,
+      type = 'scatter',
+      mode = 'markers',
+      marker = list(size = 12)
+    ) %>%
+    layout(margin=list(l = 100, r = 20, b = 10, t = 30),
+           yaxis = list(tickangle=-35,tickfont=list(size=12)),
+           xaxis = list(tickfont=list(size=12)),
+           title = list(text=title.text, y=0.95))
 }

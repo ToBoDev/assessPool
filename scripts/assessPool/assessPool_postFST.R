@@ -15,11 +15,87 @@ popNACheck <- function(row.in, tmp.cov){
   return(bool.out)
 }
 
-postFST <- function(filetype, project_name, fst.calc, as, popcomb, strong_diff, p_cutoff, fasta_generation, ref_file, first_mincov, last_mincov, cov_step, lowP_removal, include_called_allpops){
+summarizePopoolation <- function(data_in){
   
-  #file.copy(from=vcf_file, to=paste(working_dir,project_name,vcf_file, sep="/"), overwrite = TRUE)
-  #file.copy(from=ref_file, to=paste(working_dir,project_name,ref_file, sep="/"), overwrite = TRUE) 
+  #aggregate to get summary values (total sites)
   
+ # data_in %>% filter(!is.na(.fst), MinCoverage >= first_mincov) %>% mutate(cov_bin = case_when(MinCoverage > covs[1] ~ "A"))
+  
+  cov.perpair.table <- data_in %>% 
+    filter(!is.na(.fst), MinCoverage >= first_mincov) %>% dplyr::group_by(MinCoverage,pair) %>% 
+    dplyr::summarize("MeanFST"=mean(.fst), 
+              "SdFST"=sd(.fst),
+              "SeFST"=sd(.fst)/sqrt(n()),
+              "MeanDP"=mean(fst.dp), 
+              "NumSNPs"=n_distinct(snpid), 
+              "NumContigs"=n_distinct(contig), 
+              "MeanSNPsPerContig"=(NumSNPs/NumContigs)) %>% 
+    dplyr::mutate(ci_lower= MeanFST - qt(0.975, n() -1) * SeFST,
+           ci_upper= MeanFST + qt(0.975, n() -1) * SeFST)
+  
+  cov.allpairs.table <- data_in %>% 
+    filter(!is.na(.fst), MinCoverage >= first_mincov)  %>% group_by(MinCoverage) %>% 
+    dplyr::summarize("MeanFST"=mean(.fst), 
+              "SdFST"=sd(.fst),
+              "SeFST"=sd(.fst)/sqrt(n()),
+              "MeanDP"=mean(fst.dp), 
+              "NumSNPs"=n_distinct(snpid), 
+              "NumContigs"=n_distinct(contig), 
+              "MeanSNPsPerContig"=(NumSNPs/NumContigs)) %>% 
+    dplyr::mutate(ci_lower= MeanFST - qt(0.975, n() -1) * SeFST,
+           ci_upper= MeanFST + qt(0.975, n() -1) * SeFST)
+  
+  cov.perpair.table.allpools <- data_in %>% 
+    filter(!is.na(.fst), MinCoverage >= first_mincov) %>% filter(snpid %in% called_allpops$snpid) %>% group_by(MinCoverage,pair) %>% 
+    dplyr::summarize("MeanFST"=mean(.fst), 
+              "SdFST"=sd(.fst),
+              "SeFST"=sd(.fst)/sqrt(n()),
+              "MeanDP"=mean(fst.dp), 
+              "NumSNPs"=n_distinct(snpid), 
+              "NumContigs"=n_distinct(contig), 
+              "MeanSNPsPerContig"=(NumSNPs/NumContigs)) %>% 
+    dplyr::mutate(ci_lower= MeanFST - qt(0.975, n() -1) * SeFST,
+           ci_upper= MeanFST + qt(0.975, n() -1) * SeFST)
+  
+  cov.allpairs.table.allpools <- data_in %>% 
+    filter(!is.na(.fst), MinCoverage >= first_mincov) %>% filter(snpid %in% called_allpops$snpid) %>% group_by(MinCoverage) %>% 
+    dplyr::summarize("MeanFST"=mean(.fst), 
+              "SdFST"=sd(.fst),
+              "SeFST"=sd(.fst)/sqrt(n()),
+              "MeanDP"=mean(fst.dp), 
+              "NumSNPs"=n_distinct(snpid), 
+              "NumContigs"=n_distinct(contig), 
+              "MeanSNPsPerContig"=(NumSNPs/NumContigs)) %>% 
+    dplyr::mutate(ci_lower= MeanFST - qt(0.975, n() -1) * SeFST,
+           ci_upper= MeanFST + qt(0.975, n() -1) * SeFST)
+  
+
+  #return per-population and across-population summaries
+  return(list("cov.perpair.table"=cov.perpair.table, 
+              "cov.allpairs.table"=cov.allpairs.table,
+              "cov.perpair.table.allpools"=cov.perpair.table.allpools, 
+              "cov.allpairs.table.allpools"=cov.allpairs.table.allpools))
+}
+
+
+postFST <- function(filetype, 
+                    project_name, 
+                    fst.calc, 
+                    as, 
+                    popcomb, 
+                    strong_diff, 
+                    p_cutoff, 
+                    fasta_generation, 
+                    ref_file, 
+                    first_mincov, 
+                    last_mincov, 
+                    cov_step, 
+                    lowP_removal, 
+                    lowP_to_zeros, 
+                    lowDP_to_zeros, 
+                    include_called_allpops, 
+                    min.pairwise.prop,
+                    assessPool_thinning){
 
     
     setwd(paste(working_dir,"/",project_name,"/", fst.calc, sep=""))
@@ -42,90 +118,264 @@ postFST <- function(filetype, project_name, fst.calc, as, popcomb, strong_diff, 
         if ("poolfstat" %in% fst.calc){
           assign(f, read.table(f, sep=' '))}
         d=get(f) #get dataframe object
-        colnames(d)[c(1,2,6)]=c("CHROM","POS","value"); d$pair <- combs[i]; d$analysis <- ft #reorganize columns
+        colnames(d)[c(1,2,5,6)]=c("contig","pos","fst.dp","value"); d$pair <- combs[i]; d$analysis <- ft #reorganize columns
         d$value <- as.numeric(gsub(".*=","",as.character(d$value))) #remove unwanted characters, convert to numeric
         d$snpid <- paste(d[,1], d[,2], sep = '_') #add snpid column
-        d <- d[,c(1:2,6:9)] #drop unneeded columns
+        d <- d[,c("contig","pos","fst.dp","value","pair","analysis","snpid")] #drop unneeded columns
         if (ft==".fet"){ d$value <- 10^(-(d$value)) } #convert log(p) to p-value
         assign(f,d)
         df_names[df_index] <- paste(combs[i],ft,sep=""); df_index <- df_index+1
       }
     }
+    
+    
 
     #save dataframe in long format for future data manipulation
-    postpop.master.long <- bind_rows(mget(unlist(df_names)))
-    for(ft in filetype) rm(list=ls(pattern=paste("*.",ft,sep=''))); rm(d)  
+    postpop.master.long.backup <- bind_rows(mget(unlist(df_names))) %>% mutate(pair=unlist(pair))
+    for(ft in filetype){
+    rm(list=ls(pattern=paste("*.",ft,sep='')))}
     
-    if(fst.calc=="popoolation"){
-      if(lowP_removal){
-      postpop.master.long <- postpop.master.long %>% mutate(pair=unlist(pair)) %>% 
-        pivot_wider(values_from = value, names_from = analysis, values_fn={mean}) %>% filter(.fet < p_cutoff) %>% 
-        pivot_longer(cols = c(.fet,.fst), names_to = "analysis")
+    rm(d) 
+    
+    # read in fasta file as character vector
+    fasta_lines <- readLines(paste0(working_dir, "/",ref_file))
+    
+    # initialize empty lists to store sequence names and lengths
+    seq_names <- list()
+    seq_lengths <- list()
+    
+    fa_headers <- which(grepl("^>", fasta_lines))
+    # loop through each line in fasta file
+    for (i in 1:length(fa_headers)) {
+      
+      line <- fasta_lines[fa_headers[i]]
+      
+      # check if line starts with ">"
+      if (substr(line, 1, 1) == ">") {
+        # get sequence name
+        seq_name <- gsub("^>", "", line)
+        
+        # get length of sequence
+        if(i < length(fa_headers)){
+        seq_length <- nchar(paste(fasta_lines[(fa_headers[i]+1):(fa_headers[i+1]-1)], collapse=""))
+        } else { 
+          seq_length <- nchar(paste(fasta_lines[(fa_headers[i]+1):length(fasta_lines)], collapse=""))
+        }
+        
+        # append sequence name and length to lists
+        seq_names[[length(seq_names)+1]] <- seq_name
+        seq_lengths[[length(seq_lengths)+1]] <- seq_length
       }
     }
     
-    #convert to wide format for export
-    postpop.master.tmp <- postpop.master.long
-    postpop.master.tmp$tag <- paste(postpop.master.tmp$pair, postpop.master.tmp$analysis,sep="")
-    postpop.master.tmp$pair <- NULL; postpop.master.tmp$analysis <- NULL
-    postpop.master.wide <- spread(postpop.master.tmp, tag, value)
-    rm(postpop.master.tmp)
+    # combine sequence names and lengths into data frame
+    ref_names_lengths <- data.frame("contig"=as.factor(unlist(seq_names)), "contig_length"=as.numeric(unlist(seq_lengths)), stringsAsFactors = FALSE)
     
-    #add columns from master dataframe
+    postpop.master.long <- left_join(postpop.master.long.backup, ref_names_lengths, by="contig") %>% 
+      select(snpid, contig, pos, contig_length, fst.dp, pair, analysis, value) %>% mutate(contig=as.character(contig))
+    
+    # postpop.master.long.backup <- postpop.master.long.backup %>% 
+    #   mutate(contig_length = as.numeric(str_extract(CHROM_full,  "(?<=length_)\\d+(?=\\_cov)"))) %>% 
+    #   mutate(contig = str_extract(CHROM_full,  "NODE_\\d+")) %>%
+    #   mutate(contig_cov = as.numeric(str_extract(CHROM_full,  "\\d+\\.\\d+$"))) %>% 
+    #   select(snpid, contig, POS, contig_length, contig_cov, fst.dp, pair, analysis, value, -CHROM_full)
+    
+    #postpop.master.long <- postpop.master.long.backup
+    
+    #pivot to columns for .fst and .fet (if PoPoolation2)
+    postpop.master.long <- postpop.master.long %>% 
+      mutate(pair=gsub(paste0(project_name,"_"),"",pair)) %>% 
+      pivot_wider(names_from=analysis, values_from=value)
+    
+    #convert nonsignificant Fst calls to 0
+    if(fst.calc=="popoolation"){
+      if(lowP_to_zeros){
+    postpop.master.long <- postpop.master.long %>% 
+      mutate(.fst = if_else(.fet > p_cutoff, 0, .fst))
+      }
+    }
+    
+    #convert low depth pairwise Fst calls to 0
+    if(lowDP_to_zeros){
+      postpop.master.long <- postpop.master.long %>% 
+        mutate(.fst = if_else(fst.dp < first_mincov, 0, .fst))
+    }
+    
+    #add MinCoverage column
+    covs <<- c(seq(first_mincov,last_mincov,cov_step))
+    postpop.master.long <- postpop.master.long %>% 
+        mutate(CovStepCutoff = cut(fst.dp, breaks = c(0,(covs-1), max(fst.dp)))) %>% 
+      mutate(CovStepCutoff = as.numeric(str_extract(CovStepCutoff, "(?<=\\()[^,]+"))+1) %>% 
+      mutate(CovStepCutoff = case_when(CovStepCutoff==1 ~ 0, CovStepCutoff==CovStepCutoff ~ CovStepCutoff))
+    
+
+    
+    #if removing all nonsignificant Fst calls
+    if(fst.calc=="popoolation"){
+        
+      fail.fet <- unique((postpop.master.long %>% filter(.fet > p_cutoff) %>% filter(fst.dp > first_mincov))$snpid)
+      total.loci <- unique(postpop.master.long$snpid)
+      m <- message(paste0(length(fail.fet), " of ", length(total.loci), " had low significance (p>", p_cutoff,") in PoPoolation's Fisher's Exact Test in at least one comparison"))
+      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
+      
+      if(lowP_removal){
+        postpop.master.long <- postpop.master.long %>% filter(.fet < p_cutoff) %>% filter(fst.dp > first_mincov)
+      }
+    }
+    
+    #add a column to get relative position of SNP along contig
+    postpop.master.long <- postpop.master.long %>% 
+      mutate(dist_contig_center=(1-(abs((contig_length/2)-pos)/contig_length)*2))
+    
+    #convert to wide format for export
+    if(fst.calc=="popoolation"){
+      
+    postpop.master.wide.fst <- postpop.master.long %>%
+      mutate(tag=paste0(pair,".fst")) %>% 
+      select(-fst.dp, -.fet, -CovStepCutoff, -pair) %>%
+      pivot_wider(values_from=.fst, names_from=tag) %>% 
+      mutate(fstNAs = rowSums(is.na(.))) %>% 
+      filter(fstNAs < C*min.pairwise.prop)
+    
+    #generate summary statistics to rank SNP postion along contig in order to select highest ranking SNP (thins data to one SNP per contig)
+    wide_to_add <- postpop.master.long %>% 
+      group_by(snpid) %>% 
+      dplyr::summarise(mean_fst.dp=mean(fst.dp),
+                mean_MinCov=mean(CovStepCutoff),
+                mean_fst=mean(.fst))
+    
+    #Add summary statistics
+    postpop.master.wide.fst.sum <- left_join(postpop.master.wide.fst, wide_to_add, by = c("snpid")) %>% 
+      select(snpid, contig, pos, contig_length, dist_contig_center, mean_fst, mean_fst.dp, mean_MinCov, fstNAs, everything())
+      
+    #perform ranking
+    # ranking order: dist_contig_center mean_fst.dp fstNAs mean_fst
+    weights <- c(-1, -1, 1, -1)
+    df_score <- postpop.master.wide.fst.sum %>%
+      mutate(score = weights[1]*dist_contig_center*0 + weights[2]*(mean_fst.dp/first_mincov) + weights[3]*(1-(fstNAs/C)) + weights[4]*(100*mean_fst))
+    
+    # rank positions based on their score within each contig
+    df_ranked <- df_score %>%
+      group_by(contig) %>%
+      mutate(rank = dense_rank(score)) %>%
+      arrange(contig, rank)
+    
+    postpop.master.wide.fst <- df_ranked
+    
+    if(assessPool_thinning){
+    # select top position for each contig
+    postpop.master.wide.fst <- df_ranked %>%
+      filter(rank == 1)
+    }
+    
+    postpop.master.wide.fet <- postpop.master.long %>% 
+      mutate(tag=paste0(pair,".fet")) %>% 
+      select(-pair, -.fst, -fst.dp, -CovStepCutoff) %>% 
+      pivot_wider(values_from=.fet, names_from=tag) %>% 
+      filter(snpid %in% postpop.master.wide.fst$snpid)
+    }
+    
+    if(fst.calc=="poolfstat"){
+      
+      postpop.master.wide.fst <- postpop.master.long %>%
+        mutate(tag=paste0(pair,".fst")) %>% 
+        select(-fst.dp , -CovStepCutoff, -pair) %>%
+        pivot_wider(values_from=.fst, names_from=tag) %>% 
+        mutate(fstNAs = rowSums(is.na(.))) %>% 
+        filter(fstNAs < C*min.pairwise.prop)
+      
+      wide_to_add <- postpop.master.long %>% 
+        group_by(snpid) %>% 
+        summarise(mean_fst.dp=mean(fst.dp),
+                  mean_MinCov=mean(CovStepCutoff),
+                  mean_fst=mean(.fst))
+      
+      #Add summary statistics
+      postpop.master.wide.fst.sum <- left_join(postpop.master.wide.fst, wide_to_add, by = c("snpid")) %>% 
+        select(snpid, contig, pos, contig_length, dist_contig_center, mean_fst, mean_fst.dp, mean_MinCov, fstNAs, everything())
+      
+      #perform ranking
+      # ranking order: dist_contig_center mean_fst.dp fstNAs mean_fst
+      weights <- c(-1, -1, 1, -1)
+      df_score <- postpop.master.wide.fst.sum %>%
+        mutate(score = weights[1]*dist_contig_center + 
+                 weights[2]*(mean_fst.dp/first_mincov) + 
+                 weights[3]*(1-(fstNAs/C)) + 
+                 weights[4]*(100*mean_fst))
+      
+      # rank positions based on their score within each contig
+      df_ranked <- df_score %>%
+        group_by(contig) %>%
+        mutate(rank = dense_rank(score)) %>%
+        arrange(contig, rank)
+      
+      postpop.master.wide.fst <- df_ranked
+      
+      if(assessPool_thinning){
+      # select top position for each contig
+      postpop.master.wide.fst <- df_ranked %>%
+        filter(rank == 1)
+      }
+      # postpop.master.wide.fst <- postpop.master.long %>% 
+      #   mutate(tag=paste0(pair,".fst")) %>% select(-pair, -fst.dp, -MinCoverage) %>% pivot_wider(values_from=.fst, names_from=tag)
+    }
+    
+        #add columns from master dataframe
     as$snpid <- paste(as$CHROM, as$POS, sep="_")#; as$POS <- NULL
     #postpop.master.wide <- merge(as[,-which(names(as) %in% c("LEN","INS.len","DEL.len"))], postpop.master.wide[,-which(names(postpop.master.wide) %in% c("CHROM"))], by="snpid", all.y=TRUE, all.x=FALSE) 
     
-    #convert above line to dplyr
-    postpop.master.wide <- left_join(as[,-which(names(as) %in% c("LEN","INS.len","DEL.len"))], postpop.master.wide[,-which(names(postpop.master.wide) %in% c("CHROM"))])
+    ##MAYBE 
+    postpop.master.wide <- right_join((as %>% select(-"LEN",-"INS.len",-"DEL.len")), 
+                                     (postpop.master.wide.fst %>% select(-rank,-score)),
+                                     by="snpid")
     
-    #filter out monomorphic SNPs with all pairwise Fst=0
-    if (".fst" %in% filetype){
-      postpop.master.wide$fst0s <- apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) length(which(x==0)))  #counts instances of Fst=0
-      postpop.master.wide <- postpop.master.wide[which(postpop.master.wide$fst0s < C),]; postpop.master.wide$fst0s <- NULL
-    }
+    # #filter out monomorphic SNPs with all pairwise Fst=0
+    # if (".fst" %in% filetype){
+    #   postpop.master.wide$fst0s <- apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) length(which(x==0)))  #counts instances of Fst=0
+    #   postpop.master.wide <- postpop.master.wide[which(postpop.master.wide$fst0s < C),]; postpop.master.wide$fst0s <- NULL
+    # }
     
-    #keep track of which populations have a SNP at this position (slow...)
-    postpop.master.wide$popIncl <- apply(postpop.master.wide[,grep(filetype[1],names(postpop.master.wide))], 1, function(x) names(postpop.master.wide[,grep(filetype[1],names(postpop.master.wide))])[which(!is.na(x))])
-    postpop.master.wide$popIncl <- apply(postpop.master.wide[,"popIncl",drop=F], 1, getPopNames)
+    # #keep track of which populations have a SNP at this position (slow...)
+    # postpop.master.wide$popIncl <- apply(postpop.master.wide[,grep(filetype[1],names(postpop.master.wide))], 1, function(x) names(postpop.master.wide[,grep(filetype[1],names(postpop.master.wide))])[which(!is.na(x))])
+    # 
+    # postpop.master.wide$popIncl <- apply(postpop.master.wide[,"popIncl",drop=F], 1, getPopNames)
     
     #count number of populations in which a SNP is not called; should not be any NAs but to double check
-    postpop.master.wide$fstNAs <- apply(postpop.master.wide[,grep(filetype[1],names(postpop.master.wide))], 1, function(x) sum(is.na(x)))
-    postpop.master.wide <- postpop.master.wide[!(postpop.master.wide$fstNAs >= C),] # remove rows without SNPS called in any pair (i.e. those that did not pass through filters)
+    # postpop.master.wide$fstNAs <- apply(postpop.master.wide[,grep(filetype[1],names(postpop.master.wide))], 1, function(x) sum(is.na(x)))
+    # postpop.master.wide <- postpop.master.wide[!(postpop.master.wide$fstNAs >= C),] # remove rows without SNPS called in any pair (i.e. those that did not pass through filters)
     m <- paste0(nrow(postpop.master.wide), " informative variable sites retained after ", fst.calc)
     message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     
     #apply same filters to data stored in long format
-    snpids_filter <- data.frame("snpid"=postpop.master.wide$snpid)
-    postpop.master.long <- merge(postpop.master.long, snpids_filter, all=FALSE)
+    postpop.master.long <- postpop.master.long %>% filter(snpid %in% postpop.master.wide$snpid)
+    # merge(postpop.master.long, snpids_filter, all=FALSE)
     
     #clean up environment and organize data
-    postpop.master.wide$TYPE <- as.factor(postpop.master.wide$TYPE); postpop.master.long$CHROM <- as.factor(postpop.master.long$CHROM)
-      postpop.master.wide <- arrange(postpop.master.wide, CHROM, POS) #sort by CHROM/POS
+    postpop.master.wide$TYPE <- as.factor(postpop.master.wide$TYPE); postpop.master.long$snpid <- as.factor(postpop.master.long$snpid)
+    postpop.master.wide <- postpop.master.wide %>% arrange(snpid) #sort by CHROM/POS
     
     ####################### File export
     
     #export all variable sites
-    popl.mast.export <- data.frame(lapply(postpop.master.wide, as.character), stringsAsFactors=FALSE)
+    #popl.mast.export <- data.frame(lapply(postpop.master.wide, as.character), stringsAsFactors=FALSE)
     mkdirs(paste(working_dir,"/", project_name, "/output/", fst.calc, "/", sep=""))
-    write.csv(popl.mast.export, paste0(working_dir,"/", project_name, "/output/", fst.calc, "/", project_name,"_allvar_post",fst.calc,".csv"), row.names=FALSE)
+    write.csv(postpop.master.wide, paste0(working_dir,"/", project_name, "/output/", fst.calc, "/", project_name,"_allvar_post",fst.calc,".csv"), row.names=FALSE)
     m <- paste0("Exported all variable sites to ","output/", fst.calc, "/", project_name,"_allvar_post", fst.calc,".csv")
     message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     
     #Test how many SNPs are called in all populations
-    called_allpops <- postpop.master.wide[postpop.master.wide$fstNAs==0,] 
+    called_allpops <<- postpop.master.wide[postpop.master.wide$fstNAs==0,] 
     m <- paste(nrow(called_allpops), "SNPs called in all pools.")
     if(nrow(called_allpops)==0){
       message("No SNPs shared accross all populations, we recommend using \"include_called_allpops=F\"")
     }
     message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     
-    
-    
     if(include_called_allpops){
 
     #export sites called in all populations
-    popl.allpops.exports <- data.frame(lapply(called_allpops, as.character), stringsAsFactors=FALSE)
-    write.csv(popl.mast.export, paste0(working_dir,"/", project_name,"/output/", fst.calc, "/", project_name, "_calledAllPools_post",fst.calc,".csv"), row.names=FALSE)
+    #popl.allpops.exports <- data.frame(lapply(called_allpops, as.character), stringsAsFactors=FALSE)
+    write.csv(called_allpops, paste0(working_dir,"/", project_name,"/output/", fst.calc, "/", project_name, "_calledAllPools_post",fst.calc,".csv"), row.names=FALSE)
     m <- paste0("Exported variable sites called in all pools to ","output/", fst.calc, "/", project_name,"_calledAllPools_post",fst.calc,".csv")
     message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
     
@@ -133,26 +383,23 @@ postFST <- function(filetype, project_name, fst.calc, as, popcomb, strong_diff, 
     if (".fst" %in% filetype){
       
       #extract sites that show strong differentiation
-      postpop.master.wide$DiffFST <- apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) any(x >= strong_diff))
-      popl.appfx <- postpop.master.wide[which(postpop.master.wide$DiffFST==TRUE),]
+      popl.appfx <-  postpop.master.wide %>% filter_at(vars(contains(".fst")), any_vars(. > strong_diff))
+      
       #popl.appfx <- na.omit(postpop.master.wide[apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) any(x >= strong_diff)),])
       m <- paste0(nrow(popl.appfx), " SNPs are strongly differentiated (FST>=", strong_diff, ") in at least one comparison.")
       message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
-      popl.appfx.export <- data.frame(lapply(popl.appfx, as.character), stringsAsFactors=FALSE)
-      write.csv(popl.appfx.export, paste0(working_dir,"/", project_name,"/output/", fst.calc, "/", project_name, "_strongly_differentiated_sites.csv"), row.names=FALSE)
+      write.csv(popl.appfx, paste0(working_dir,"/", project_name,"/output/", fst.calc, "/", project_name, "_strongly_differentiated_sites.csv"), row.names=FALSE)
       m <- paste0("Exported strongly differentiated sites to ","output/", fst.calc, "/", project_name,"_strongly_differentiated_sites.csv")
       message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
       #extract alternatively fixed sites 
-      postpop.master.wide$FixedFST <- apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) any(x == 1.0))
-      popl.fixed <- postpop.master.wide[which(postpop.master.wide$FixedFST==TRUE),]
+      popl.fixed <- postpop.master.wide %>% filter_at(vars(contains(".fst")), any_vars(. >= 0.99))
       #popl.fixed <- na.omit(postpop.master.wide[apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) any(x == 1.0)),])
       m <- paste(nrow(popl.fixed), "sites are alternatively fixed (FST=1) in an least one comparison.")
       message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
-      popl.fixed.export <- data.frame(lapply(popl.fixed, as.character), stringsAsFactors=FALSE)
-      write.csv(popl.fixed.export, paste0(working_dir,"/", project_name,"/output/", fst.calc, "/", project_name, "_fixed_snps.csv"), row.names=FALSE)
+      write.csv(popl.fixed, paste0(working_dir,"/", project_name,"/output/", fst.calc, "/", project_name, "_fixed_snps.csv"), row.names=FALSE)
       m <- paste0("Exported alternatively fixed sites to ","output/", fst.calc, "/", project_name,"_fixed_snps.csv")
       message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
       
@@ -174,160 +421,42 @@ postFST <- function(filetype, project_name, fst.calc, as, popcomb, strong_diff, 
       }
     }
     
-    if (".fet" %in% filetype){
-      postpop.master.wide$LowP <- apply(postpop.master.wide[,grep(".fet", names(postpop.master.wide))], 1, function(x) any(x <= p_cutoff))
-      popl.lowP <- postpop.master.wide[which(postpop.master.wide$LowP==TRUE),]
-      #popl.fixed <- na.omit(postpop.master.wide[apply(postpop.master.wide[,grep(".fst", names(postpop.master.wide))], 1, function(x) any(x == 1.0)),])
-      m <- paste(nrow(popl.lowP), " SNPs have a low p-value (p<=", p_cutoff, ") in at least one comparison.", sep="")
-      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
-      
-      popl.lowP.export <- data.frame(lapply(popl.lowP, as.character), stringsAsFactors=FALSE)
-      write.csv(popl.lowP.export, paste(working_dir,"/", project_name,"/output/", fst.calc, "/", project_name, "_lowP_snps.csv", sep=""), row.names=FALSE)
-      m <- paste("Exported low p-value sites to ","output/", fst.calc, "/", project_name,"_lowP_snps.csv", sep="")
-      message(m); write.log(m, paste(working_dir, project_name, "logs/analysis.log", sep="/"))
-    }
+    #add additional rows for each MinCov passed by a SNP
+    cov_tmp_df <- list()
     
-    
-    ###############add min coverage level to dataframe
-    
-    covs <- rev(c(seq(first_mincov,last_mincov,cov_step))) 
-    #convert to numeric and replace NAs with 0
-    #postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))] <- apply(postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))], 1, as.character)
-    #postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))] <- apply(postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))], 1, as.numeric)
-    postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))][is.na(postpop.master.wide[,grep("DP\\.", names(postpop.master.wide))])] <- 0
-    df_names_total <- list(); df_index <- 1
-    
-    #message("")
-    #assign min in-population coverage levels to SNPs
-    
-    tmp.idx <- c() #initialize list to keep track of rows already analyzed
-    d <- data.frame()
-    tmp.postpop <- postpop.master.wide[,-grep("RO\\.|AO\\.", names(postpop.master.wide))]
-    tmp.postpop <- tmp.postpop[,-which(names(tmp.postpop) %in% c("CHROM","POS","NS","TDP","TYPE","AN","REF","ALT","Rlen","Alen"))]
-    #remove uneeded columns
-    #rm(postpop.master.wide) #no longer needed
-    gc()
-    
-    #get SNPs at each minimum coverage level
     for(i in 1:length(covs)){
-      df_name <- paste("popl.master.", covs[i],"x", sep="")
-      if (length(tmp.idx>0)){
-        tmp.postpop <- tmp.postpop[-tmp.idx,]
-      }
-      bool.out <- apply(tmp.postpop[,c("popIncl", names(tmp.postpop)[grep("DP\\.", names(tmp.postpop))])], 1, function(x) popNACheck(x, covs[i]))
-      tmp.idx <- as.numeric(which(bool.out))
-      tmp.d <- tmp.postpop[tmp.idx,]
-      tmp.d <- tmp.d[,-grep("DP\\.", names(tmp.d))]
-      
-      if (nrow(tmp.d)>0){
-        if (nrow(d)>0){
-          #new SNPs and old SNPs
-          #add from previous step
-          d$MinCoverage <- covs[i]
-          tmp.d$MinCoverage <- covs[i]
-          d <- rbind(d, tmp.d); rm(tmp.d)
-        } else{
-          #new SNPs but no old SNPs
-          tmp.d$MinCoverage <- covs[i]
-          d <- tmp.d; rm(tmp.d)
-        }
-        
-        #save new dataframe
-        assign(df_name, d)
-        df_names_total[df_index] <- paste(df_name); df_index <- df_index+1
-        message(paste(nrow(d)," SNPs at ",covs[i],"x coverage.", sep=""))
-        
-      } else{
-        if (nrow(d)>0){
-          #old SNPs but no new SNPs
-          d$MinCoverage <- covs[i]
-          assign(df_name, d)
-          df_names_total[df_index] <- paste(df_name); df_index <- df_index+1
-          message(paste(nrow(d)," SNPs at ",covs[i],"x coverage.", sep=""))
-          
-        } else{
-          assign(df_name, NA)
-          df_names_total[df_index] <- paste(df_name); df_index <- df_index+1
-          message(paste("0 SNPs at ",covs[i],"x coverage.", sep=""))
-        }
-      }
+      cov_tmp_df[[i]] <- postpop.master.long %>% filter(CovStepCutoff > (covs[i]-1)) %>% mutate(MinCoverage=covs[i])
     }
     
-    #append dataframes to build master dataframes (wide  and long) by coverage
-    postpop.master.wide.bycov <- unique(bind_rows(mget(unlist(df_names_total))))
-    min_covs <- data.frame(snpid=postpop.master.wide.bycov$snpid, MinCoverage=postpop.master.wide.bycov$MinCoverage, fstNAs=postpop.master.wide.bycov$fstNAs)
-    postpop.master.long.bycov <- data.frame(merge(postpop.master.long, min_covs, all=FALSE)); rm(min_covs)
-    postpop.master.long.bycov$pair <- as.character(postpop.master.long.bycov$pair)
-    postpop.master.long.bycov$CHROM <- as.character(postpop.master.long.bycov$CHROM)
-    
-    summarizePopoolation <- function(data_in){
-      #aggregate to get summary values (total sites)
-      per.pop.meanFST <- aggregate(value~MinCoverage+pair, data=data_in[which(data_in$analysis==".fst"),], function(x) mean(x, na.rm = T))
-      colnames(per.pop.meanFST)[3] <- "MeanFST"
-      per.pop.sdFST <- aggregate(value~MinCoverage+pair, data=data_in[which(data_in$analysis==".fst"),], function(x) sd(x, na.rm = T))
-      colnames(per.pop.sdFST)[3] <- "SdFST"
-      per.pop.numSNPs <- aggregate(snpid~MinCoverage+pair, data=data_in[which(data_in$analysis==".fst"),], function(x) length(unique(x)))
-      colnames(per.pop.numSNPs)[3] <- "NumSNPs"
-      per.pop.numContigs <- aggregate(CHROM~MinCoverage+pair, data=data_in[which(data_in$analysis==".fst"),], function(x) length(unique(x)))
-      colnames(per.pop.numContigs)[3] <- "NumContigs"
-      
-      #combine per-population summaries
-      cov.perpair.table <- Reduce(function(x, y) merge(x, y, by=c("MinCoverage","pair")), list(per.pop.meanFST, per.pop.sdFST, per.pop.numSNPs, per.pop.numContigs))
-      cov.perpair.table$MeanSNPsPerContig <- round((cov.perpair.table$NumSNPs / cov.perpair.table$NumContigs), 1)
-      
-      #across population summary 
-      all.meanFST <- aggregate(MeanFST~MinCoverage, per.pop.meanFST, FUN=mean); colnames(all.meanFST)[2] <- "MeanFST"
-      all.sdFST <- aggregate(MeanFST~MinCoverage, per.pop.meanFST, FUN=sd); colnames(all.sdFST)[2] <- "SdFST"
-      all.numSNPs <- aggregate(snpid~MinCoverage, data=data_in[which(data_in$analysis==".fst"),], function(x) length(unique(x)))
-      colnames(all.numSNPs)[2] <- "NumSNPs"
-      all.numContigs <- aggregate(CHROM~MinCoverage, data=data_in[which(data_in$analysis==".fst"),], function(x) length(unique(x)))
-      colnames(all.numContigs)[2] <- "NumContigs"
-      
-      #combine across-population summaries
-      cov.allpairs.table <- Reduce(function(x, y) merge(x, y, by="MinCoverage", all=TRUE), list(all.meanFST, all.sdFST, all.numSNPs, all.numContigs))
-      cov.allpairs.table$MeanSNPsPerContig <- round((cov.allpairs.table$NumSNPs / cov.allpairs.table$NumContigs), 1)
-      
-      #return per-population and across-population summaries
-      return(list("cov.perpair.table"=cov.perpair.table, "cov.allpairs.table"=cov.allpairs.table))
-    }
+    postpop.master.long <- bind_rows(cov_tmp_df)
     
     #get summaries for all SNPs
-    total.summary.out <- summarizePopoolation(postpop.master.long.bycov)
+    total.summary.out <- summarizePopoolation(postpop.master.long)
+    
     cov.allpairs.table.total <- total.summary.out$cov.allpairs.table
     cov.perpair.table.total <- total.summary.out$cov.perpair.table
-    cov.perpair.table.total$pair <- gsub(paste(project_name,"_",sep=""), "", cov.perpair.table.total$pair)
+    #cov.perpair.table.total$pair <- gsub(paste(project_name,"_",sep=""), "", cov.perpair.table.total$pair)
     
-    #get summaries for SNPs called in all pools
-    if(include_called_allpops){
+      if(include_called_allpops){
+      #get summaries for SNPs called in all pools 
+      postpop.master.long.allpools <- postpop.master.long %>% filter(snpid %in% called_allpops$snpid)
+    
+      cov.allpairs.table.allpools <- total.summary.out$cov.allpairs.table.allpools
+      cov.perpair.table.allpools <- total.summary.out$cov.perpair.table.allpools
+      #cov.perpair.table.allpools$pair <- gsub(paste(project_name,"_",sep=""), "", cov.perpair.table.allpools$pair)
       
-    allpools <- data.frame("snpid"=as.character(called_allpops$snpid))
-    postpop.master.long.bycov.allpools <- merge(postpop.master.long.bycov, allpools, all.x=FALSE, all.y=TRUE)
-    allpools.summary.out <- summarizePopoolation(postpop.master.long.bycov.allpools)
-    cov.allpairs.table.allpools <- allpools.summary.out$cov.allpairs.table
-    cov.perpair.table.allpools <- allpools.summary.out$cov.perpair.table
-    cov.perpair.table.allpools$pair <- gsub(paste(project_name,"_",sep=""), "", cov.perpair.table.allpools$pair)
-    
-    return(list("cov.allpairs.table.total"=cov.allpairs.table.total, 
-                "cov.perpair.table.total"=cov.perpair.table.total, 
-                "cov.allpairs.table.allpools"=cov.allpairs.table.allpools, 
-                "cov.perpair.table.allpools"=cov.perpair.table.allpools,
-                "postpop.master.long"=postpop.master.long.bycov,
-                "postpop.master.long.allpools"=postpop.master.long.bycov.allpools))
-    } else {
+      return(list("cov.allpairs.table.total"=cov.allpairs.table.total, 
+                  "cov.perpair.table.total"=cov.perpair.table.total, 
+                  "cov.allpairs.table.allpools"=cov.allpairs.table.allpools, 
+                  "cov.perpair.table.allpools"=cov.perpair.table.allpools,
+                  "postpop.master.long"=postpop.master.long,
+                  "postpop.master.long.allpools"=postpop.master.long.allpools))
+      } else {
       
-    allpools <- data.frame("snpid"=as.character(called_allpops$snpid))
-    postpop.master.long.bycov.allpools <- merge(postpop.master.long.bycov, allpools, all.x=FALSE, all.y=TRUE)
-    allpools.summary.out <- postpop.master.long.bycov.allpools
-    cov.allpairs.table.allpools <- allpools.summary.out$cov.allpairs.table
-    cov.perpair.table.allpools <- allpools.summary.out$cov.perpair.table
-    
-    return(list("cov.allpairs.table.total"=cov.allpairs.table.total, 
-                "cov.perpair.table.total"=cov.perpair.table.total, 
-                "cov.allpairs.table.allpools"=cov.allpairs.table.allpools, 
-                "cov.perpair.table.allpools"=cov.perpair.table.allpools,
-                "postpop.master.long"=postpop.master.long.bycov,
-                "postpop.master.long.allpools"=postpop.master.long.bycov.allpools))
-    }
+      return(list("cov.allpairs.table.total"=cov.allpairs.table.total, 
+                  "cov.perpair.table.total"=cov.perpair.table.total, 
+                  "postpop.master.long"=postpop.master.long))
+      }
    
 }
 
@@ -355,7 +484,11 @@ get_popoolation_out <- function(working_dir, project_name, fst.calc){
                               last_mincov=last_mincov,
                               cov_step=cov_step,
                               lowP_removal=lowP_removal,
-                              include_called_allpops=include_called_allpops)
+                              lowP_to_zeros=lowP_to_zeros,
+                              lowDP_to_zeros=lowDP_to_zeros,
+                              include_called_allpops=include_called_allpops,
+                              min.pairwise.prop=min.pairwise.prop,
+                              assessPool_thinning=assessPool_thinning)
     
     #extract needed data from return values
     assign(paste0("cov.perpair.table.total_", fst.calc), pa_list_out_pp$cov.perpair.table.total)
@@ -382,13 +515,16 @@ get_popoolation_out <- function(working_dir, project_name, fst.calc){
               row.names=F)
     
     if(include_called_allpops){
+     
      write.csv(get(paste0("cov.allpairs.table.allpools_", fst.calc)), 
               file = paste(working_dir, project_name,"output", fst.calc, paste0("cov.allpairs.table.allpools_", fst.calc,".csv"), sep="/"),
               row.names=F)
-    
+  
     write.csv(get(paste0("cov.perpair.table.allpools_", fst.calc)), 
               file = paste(working_dir, project_name,"output", fst.calc, paste0("cov.perpair.table.allpools_", fst.calc,".csv"), sep="/"),
               row.names=F)
+    
+      
     write.csv(get(paste0("postpop.master.long.allpools_", fst.calc)), 
               file = paste(working_dir, project_name,"output", fst.calc, paste0("postpop.master.long.allpools_", fst.calc,".csv"), sep="/"),
               row.names=F)
@@ -419,7 +555,11 @@ get_poolfstat_out <- function(working_dir, project_name, fst.calc){
                               last_mincov=last_mincov,
                               cov_step=cov_step,
                               lowP_removal=lowP_removal,
-                              include_called_allpops=include_called_allpops)
+                              lowP_to_zeros=lowP_to_zeros,
+                              lowDP_to_zeros=lowDP_to_zeros,
+                              include_called_allpops=include_called_allpops,
+                              min.pairwise.prop=min.pairwise.prop,
+                              assessPool_thinning=assessPool_thinning)
     
     #extract needed data from return values
     assign(paste0("cov.perpair.table.total_", fst.calc), pa_list_out_pf$cov.perpair.table.total)
@@ -490,15 +630,14 @@ wrangle_out <- function(working_dir, project_name, fst.calc){
       postpop.master.long.allpools_popoolation <<- NA
     }
     
-    postpop.master.wide_pp <<- spread(postpop.master.long_popoolation, analysis, value)
-    postpop.master.wide_pp$pair <<- gsub(paste0(project_name,   "_"), "", postpop.master.wide_pp$pair) 
-    postpop.master.wide_pp <<- separate(postpop.master.wide_pp, pair, c("popA","popB"), sep="_", remove=F)
+    #postpop.master.long_popoolation$pair <<- gsub(paste0(project_name,   "_"), "", postpop.master.wide_pp$pair) 
+    postpop.master.long_popoolation <<- separate(postpop.master.long_popoolation, pair, c("popA","popB"), sep="_", remove=F)
     
-    cov.perpair.table.total_pp <<- cov.perpair.table.total_popoolation[order(cov.perpair.table.total_popoolation$MinCoverage),]
-    cov.perpair.table.total_pp <<- separate(cov.perpair.table.total_pp, pair, c("popA","popB"), sep="_", remove=F)
-    cov.perpair.table.total_pp$NumSNPs <<- as.numeric(cov.perpair.table.total_pp$NumSNPs)
-    cov.perpair.table.total_pp$NumContigs <<- as.numeric(cov.perpair.table.total_pp$NumContigs)
-    cov.perpair.table.total_pp$pair <<- as.character(cov.perpair.table.total_pp$pair)
+    cov.perpair.table.total_popoolation <<- cov.perpair.table.total_popoolation[order(cov.perpair.table.total_popoolation$MinCoverage),]
+    cov.perpair.table.total_popoolation <<- separate(cov.perpair.table.total_popoolation, pair, c("popA","popB"), sep="_", remove=F)
+    cov.perpair.table.total_popoolation$NumSNPs <<- as.numeric(cov.perpair.table.total_popoolation$NumSNPs)
+    cov.perpair.table.total_popoolation$NumContigs <<- as.numeric(cov.perpair.table.total_popoolation$NumContigs)
+    cov.perpair.table.total_popoolation$pair <<- as.character(cov.perpair.table.total_popoolation$pair)
     
     }
   
@@ -531,15 +670,22 @@ wrangle_out <- function(working_dir, project_name, fst.calc){
       postpop.master.long.allpools_poolfstat <<- NA
     }
     
-    postpop.master.wide_pf <<- spread(postpop.master.long_poolfstat, analysis, value)
-    postpop.master.wide_pf$pair <<- gsub(paste0(project_name,"_"), "", postpop.master.wide_pf$pair) 
-    postpop.master.wide_pf <<- separate(postpop.master.wide_pf, pair, c("popA","popB"), sep="_", remove=F)
     
-    cov.perpair.table.total_pf <<- cov.perpair.table.total_poolfstat[order(cov.perpair.table.total_poolfstat$MinCoverage),]
-    cov.perpair.table.total_pf <<- separate(cov.perpair.table.total_pf, pair, c("popA","popB"), sep="_", remove=F)
-    cov.perpair.table.total_pf$NumSNPs <<- as.numeric(cov.perpair.table.total_pf$NumSNPs)
-    cov.perpair.table.total_pf$NumContigs <<- as.numeric(cov.perpair.table.total_pf$NumContigs)
-    cov.perpair.table.total_pf$pair <<- as.character(cov.perpair.table.total_pf$pair)
+    #postpop.master.long_poolfstat$pair <<- gsub(paste0(project_name,   "_"), "", postpop.master.wide_pp$pair) 
+    postpop.master.long_poolfstat <<- separate(postpop.master.long_poolfstat, pair, c("popA","popB"), sep="_", remove=F)
+    
+    cov.perpair.table.total_poolfstat <<- cov.perpair.table.total_poolfstat[order(cov.perpair.table.total_poolfstat$MinCoverage),]
+    cov.perpair.table.total_poolfstat <<- separate(cov.perpair.table.total_poolfstat, pair, c("popA","popB"), sep="_", remove=F)
+    cov.perpair.table.total_poolfstat$NumSNPs <<- as.numeric(cov.perpair.table.total_poolfstat$NumSNPs)
+    cov.perpair.table.total_poolfstat$NumContigs <<- as.numeric(cov.perpair.table.total_poolfstat$NumContigs)
+    cov.perpair.table.total_poolfstat$pair <<- as.character(cov.perpair.table.total_poolfstat$pair)
 
         }
 }
+
+
+
+
+
+
+

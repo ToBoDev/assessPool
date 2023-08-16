@@ -96,7 +96,6 @@ commands <- paste0("#!/bin/bash
 vcf_in=\"",paste(working_dir,vcf_file,sep="/"), "\"
 NUMPROC=",threads,"
 vcflib_PATH=\"", paste(vcflib_PATH), "\"
-#vcflib_PATH=\"/10tb_leviathan/evan/assesspool_dev/scripts/vcflib/bin/vcffilter\" 
 proj=\"", paste(project_name), "\"
 wd=\"", paste(working_dir), "\"          
 if [ ! -d $wd ]; then mkdir $wd; fi\ 
@@ -136,19 +135,19 @@ if(!is.na(hwe.cutoff)){
 },
 
 #####VCFLIB set up##########
-if(!is.na(min.mapping.quality)){
+if(!anyNA(min.mapping.quality)){
   paste0(
     "VL1=(\"MQM > ", min.mapping.quality[1], " & MQMR > ", min.mapping.quality[2], "\") 
     echo \"${vcflib_PATH}/vcffilter -s -f \\\"${VL1[@]}\\\" $vcf_in | grep -v '#' - | wc -l | awk -v FLAG=\\\"${VL1[@]}\\\" '{print \\\"6_min.mapping.quality,\\\" FLAG \\\",\\\" \\$1}' >> ${wd}/${proj}/${proj}_filtering_results.csv\" >> ${wd}/${proj}/${proj}_filtering_send.sh \n")
 },
 
-if(!is.na(mapping.ratio)){
+if(!anyNA(mapping.ratio)){
   paste0(
     "VL2=(\"MQM / MQMR > ", mapping.ratio[1], " & MQM / MQMR < ", mapping.ratio[2], "\") 
     echo \"${vcflib_PATH}/vcffilter -f \\\"${VL2[@]}\\\" $vcf_in | grep -v '#' - | wc -l | awk -v FLAG=\\\"${VL2[@]}\\\" '{print \\\"7_mapping.ratio,\\\" FLAG \\\",\\\" \\$1}' >> ${wd}/${proj}/${proj}_filtering_results.csv\" >> ${wd}/${proj}/${proj}_filtering_send.sh \n")
 },
    
-if(!is.na(read.balance)){
+if(!anyNA(read.balance)){
   paste0( 
     "VL3=(\"RPR > ", read.balance[1], " & RPL > ", read.balance[2], "\") 
     echo \"${vcflib_PATH}/vcffilter -f \\\"${VL3[@]}\\\" $vcf_in | grep -v '#' - | wc -l | awk -v FLAG=\\\"${VL3[@]}\\\" '{print \\\"8_read.balance,\\\" FLAG \\\",\\\" \\$1}' >> ${wd}/${proj}/${proj}_filtering_results.csv\" >> ${wd}/${proj}/${proj}_filtering_send.sh \n")
@@ -236,7 +235,6 @@ vcf_in=\"",paste(working_dir, vcf_file, sep="/"), "\"
 vcf_out=\"",paste0(working_dir,"/filtered_",vcf_file), "\"
 
 vcflib_PATH=\"", paste(vcflib_PATH), "\"
-#vcflib_PATH=\"/10tb_leviathan/evan/assesspool_dev/scripts/vcflib/bin/vcffilter\"
 proj=\"", paste(project_name), "\" 
 wd=\"", paste(working_dir), "\"
 if [ ! -d $wd ]; then mkdir $wd; fi \n",
@@ -258,13 +256,13 @@ if(!is.na(hwe.cutoff)){
   paste0("VT5=\"--hwe ", hwe.cutoff, "\" \n")},
 
 #####VCFLIB set up##########
-if(!is.na(min.mapping.quality)){
+if(!anyNA(min.mapping.quality)){
   paste0("VL1=(\"MQM > ", min.mapping.quality[1], " & MQMR > ", min.mapping.quality[2], "\") \n")},
 
-if(!is.na(mapping.ratio)){
+if(!anyNA(mapping.ratio)){
   paste0("VL2=(\"MQM / MQMR > ", mapping.ratio[1], " & MQM / MQMR < ", mapping.ratio[2], "\") \n")},
 
-if(!is.na(read.balance)){
+if(!anyNA(read.balance)){
   paste0("VL3=(\"RPR > ", read.balance[1], " & RPL > ", read.balance[2], "\") \n")},
 
 if(!is.na(quality.depth.ratio)){
@@ -292,9 +290,9 @@ if(!is.na(alt.obs)){
   paste0("VL11=(\"AO > ", alt.obs, "\") \n")},                   
 
 "${vcflib_PATH}/vcffilter -f \"",
-      if(!is.na(min.mapping.quality)){paste0("${VL1} & ")},
-      if(!is.na(mapping.ratio)){paste0("${VL2} & ")},
-      if(!is.na(read.balance)){paste0("${VL3} & ")},
+      if(!anyNA(min.mapping.quality)){paste0("${VL1} & ")},
+      if(!anyNA(mapping.ratio)){paste0("${VL2} & ")},
+      if(!anyNA(read.balance)){paste0("${VL3} & ")},
       if(!is.na(quality.depth.ratio)){paste0("${VL4} & ")},
       if(!is.na(mispaired.reads)){paste0("${VL5} & ")},
       if(!is.na(min.number.pools)){paste0("${VL6} & ")},
@@ -322,9 +320,8 @@ system(paste("bash ", paste(working_dir,project_name,"run_filter_wrapper.sh",sep
 numSNPs <- system(paste("grep -v '#'", paste0("filtered_",vcf_file), "| wc -l", sep=" "), intern=T)
 tmp_fdf <- data.frame(filter=as.character(paste("all_filters",sep="_")),arg=as.character(paste("NA")), SNPs=as.numeric(numSNPs))
 post_filter_df <<- dplyr::full_join(filter_df, tmp_fdf)
-return(fdf)        
+return(post_filter_df)        
 }
-
 
 
 
