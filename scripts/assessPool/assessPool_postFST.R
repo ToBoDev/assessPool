@@ -286,7 +286,7 @@ postFST <- function(filetype,
       
       wide_to_add <- postpop.master.long %>% 
         group_by(snpid) %>% 
-        summarise(mean_fst.dp=mean(fst.dp),
+        dplyr::summarise(mean_fst.dp=mean(fst.dp),
                   mean_MinCov=mean(CovStepCutoff),
                   mean_fst=mean(.fst))
       
