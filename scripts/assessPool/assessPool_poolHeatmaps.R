@@ -27,7 +27,7 @@ poolHeatmaps <- function(data_in, heatmap_cov, pool_order, fst.c){
 
     sum.postpop <- data_in %>% filter(fst.dp > heatmap_cov-1) %>% group_by(pair) %>% 
       dplyr::summarise(fst=mean(.fst), 
-                       ttest=t.test(.fst)[3]$p.value,
+                       ttest=t.test(.fst, mu = 0 , alternative="greater")[3]$p.value,
                        SNPs=n(),
                        mean.coverage=mean(fst.dp))
 
