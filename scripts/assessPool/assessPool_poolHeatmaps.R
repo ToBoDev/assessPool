@@ -64,15 +64,10 @@ poolHeatmaps <- function(data_in, heatmap_cov, pool_order, fst.c, pools_to_remov
     snps <- as.matrix(SNPs.matrix)[pool_order,rev(pool_order)]
     coverage <- as.matrix(cov.matrix)[pool_order,rev(pool_order)]
     
-    
-    if(!any(pools_to_remove %in% "none")){
-      pool.index <- which(colnames(fst) %in% pools_to_remove)
-      
-      fst <- fst[-pool.index,-pool.index]
-      ttest <- ttest[-pool.index,-pool.index]
-      snps <- snps[-pool.index,-pool.index]
-      coverage <- coverage[-pool.index,-pool.index]
-    }
+      fst <- fst[rownames(fst)!=pools_to_remove,colnames(fst)!=pools_to_remove]
+      ttest <- ttest[rownames(ttest)!=pools_to_remove,colnames(ttest)!=pools_to_remove]
+      snps <- snps[rownames(snps)!=pools_to_remove,colnames(snps)!=pools_to_remove]
+      coverage <- coverage[rownames(coverage)!=pools_to_remove,colnames(coverage)!=pools_to_remove]
     
     message("Largest mean FST at this coverage is between ", maxpools[1], " and ", maxpools[2], " at ", round(max(fst.matrix, na.rm=TRUE), 4))
     message("Smallest mean FST at this coverage is between ", minpools[1], " and ", minpools[2], " at ", round(min(fst.matrix, na.rm=TRUE), 4))
