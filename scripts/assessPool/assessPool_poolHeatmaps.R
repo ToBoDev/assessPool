@@ -15,7 +15,7 @@ sumlog2 <- function (p) {
   res
 }
 
-poolHeatmaps <- function(data_in, heatmap_cov, pool_order, fst.c){
+poolHeatmaps <- function(data_in, heatmap_cov, pool_order, fst.c, pools_to_remove){
 
     #extracts necessary coverage level from parameters given
     #if invalid coverage, throw error
@@ -25,11 +25,11 @@ poolHeatmaps <- function(data_in, heatmap_cov, pool_order, fst.c){
     
     #summarize FST/FET
 
-    sum.postpop <- data_in %>% filter(fst.dp > heatmap_cov-1) %>% group_by(pair) %>% 
-      dplyr::summarise(fst=mean(.fst), 
-                       ttest=t.test(.fst, mu = 0 , alternative="greater")[3]$p.value,
-                       SNPs=n(),
-                       mean.coverage=mean(fst.dp))
+  sum.postpop <- data_in %>% filter(fst.dp > heatmap_cov-1) %>% group_by(pair) %>% select(-MinCoverage) %>% distinct_all() %>% 
+    dplyr::summarise(fst=mean(.fst), 
+                     ttest=t.test(.fst, mu = 0 , alternative="greater")[3]$p.value,
+                     SNPs=n_distinct(snpid),
+                     mean.coverage=mean(fst.dp))
 
     # sum.postpop <- postpop %>% pivot_wider(values_from = value, names_from = analysis) %>% group_by(pair) %>%
     #   dplyr::summarise(Fst=mean(.fst), 
@@ -63,6 +63,16 @@ poolHeatmaps <- function(data_in, heatmap_cov, pool_order, fst.c){
     ttest <- as.matrix(ttest.matrix)[pool_order,rev(pool_order)]
     snps <- as.matrix(SNPs.matrix)[pool_order,rev(pool_order)]
     coverage <- as.matrix(cov.matrix)[pool_order,rev(pool_order)]
+    
+    
+    if(!any(pools_to_remove %in% "none")){
+      pool.index <- which(colnames(fst) %in% pools_to_remove)
+      
+      fst <- fst[-pool.index,-pool.index]
+      ttest <- ttest[-pool.index,-pool.index]
+      snps <- snps[-pool.index,-pool.index]
+      coverage <- coverage[-pool.index,-pool.index]
+    }
     
     message("Largest mean FST at this coverage is between ", maxpools[1], " and ", maxpools[2], " at ", round(max(fst.matrix, na.rm=TRUE), 4))
     message("Smallest mean FST at this coverage is between ", minpools[1], " and ", minpools[2], " at ", round(min(fst.matrix, na.rm=TRUE), 4))
@@ -215,7 +225,7 @@ if(metric == "fst"){
 
 
 #wrapper for plotting
-plot_heatmaps <- function(fst.c,include_called_allpops){
+plot_heatmaps <- function(fst.c,include_called_allpops, pools_to_remove){
   
   if(include_called_allpops){
     
@@ -229,7 +239,8 @@ plot_heatmaps <- function(fst.c,include_called_allpops){
 hm_list_out <- poolHeatmaps(data_in=data_in,
                             heatmap_cov=heatmap_cov,
                             pool_order=pool_order,
-                            fst.c=fst.c)
+                            fst.c=fst.c,
+                            pools_to_remove=pools_to_remove)
 
 hm.fst <- generate_heatmap(data_in = hm_list_out, metric = "fst", fst.c=fst.c,
                  main_title = paste(spp_name),
