@@ -265,7 +265,7 @@ postFST <- function(filetype,
     if(assessPool_thinning){
     # select top position for each contig
     postpop.master.wide.fst <- df_ranked %>%
-      filter(rank == 1)
+      filter(rank <= 3)
     }
     
     postpop.master.wide.fet <- postpop.master.long %>% 
