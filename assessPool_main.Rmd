@@ -1,10 +1,10 @@
 ---
 editor_options: 
-title: "assessPOOL: A Variant Annotation Workflow"
+title: "assessPOOL: A poolseq Workflow"
 output: html_notebook
 ---
 
-**Copyright E Barba, E Conklin, J Whitney 2018.** 
+**Copyright EB Freel, EE Conklin, J Whitney 2018.** 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses/.
 
 
@@ -103,16 +103,15 @@ spp_name <- "<INSERT_SPP_NAME"
 vcf_file <- "<INSERT_VCF_NAME>"
 ref_file <- "<INSERT_REF_NAME>"
 
-project_name <- paste0("proj")
-spp_name <- paste0("Genus species")
+project_name <- paste0("example")
+spp_name <- paste0("Species genus")
 vcf_file <- paste0(project_name, "_TotalRawSNPs.vcf")
 ref_file <- paste0(project_name, "_reference.fasta")
-
 #optional: add your populations/pool labels here if they differ from VCF
 #NOTE: it is very important that these names be in the same order as they appear in your VCF file
 #uncomment line below to use
 
-#Steps - T to run listed step, F to skip
+#Steps
 filtering=T
 calculate_FST=T
 visualizations=T
@@ -139,7 +138,7 @@ keep.indel <- FALSE
 keep.multiallelic <- FALSE
 
 max.missing <- 0.5
-min.allele.count <- 1
+min.allele.count <- 2
 min.mean.depth <- 3
 max.mean.depth <- 500
 hwe.cutoff <- 0.01
@@ -210,7 +209,7 @@ ggplot(data=filter_for_plot) + geom_bar(aes(x=reorder(filter,-SNPs), y=SNPs, fil
 if(filtering==T){
   
 max.missing <- 0.5
-min.allele.count <- 1
+min.allele.count <- 2
 min.mean.depth <- 10
 max.mean.depth <- 500
 hwe.cutoff <- 0.01
@@ -260,6 +259,8 @@ filter_for_plot <- post_filter_df %>% dplyr::select(filter, SNPs) %>%
                       arrange(desc(SNPs), filter) %>% 
                         mutate(prop_filtered = 1 - ( (SNPs) / SNPs[1] ))
 
+
+
 ggplot(data=filter_for_plot) + geom_bar(aes(x=reorder(filter,-SNPs), y=SNPs, fill=SNPs), stat="identity") + 
     theme(axis.text.x = element_text(angle = -30, hjust=-0.1),
         axis.title.x = element_text(margin = margin(t = -20)),
@@ -267,10 +268,14 @@ ggplot(data=filter_for_plot) + geom_bar(aes(x=reorder(filter,-SNPs), y=SNPs, fil
         plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm")) +
     ggtitle("Remaining SNPs after each filter") +
     xlab("\nFilter") + ylab("\n# SNPs") + labs(fill="SNPs\nFiltered") + viridis::scale_fill_viridis()
+}
+```
 
+```{r}
+if(filtering==T){
 #thins sites to evaluate SNPs at a minimum distance apart (in bp, DEFAULT=1000)
 #helps avoid linked loci (set to 1 to turn off and use AssessPool thinning)
-thinning.threshold <- 1
+thinning.threshold <- 200
 
 filtering_results <- filter_thinning(working_dir=working_dir,
                 project_name=project_name,
@@ -278,8 +283,9 @@ filtering_results <- filter_thinning(working_dir=working_dir,
                 x=thinning.threshold,
                 post_filter_df)
 
-#save filtering
-write.csv(filtering_results, paste0(working_dir,"/", project_name, "/output/filtering.csv"), row.names = F)
+                
+#run_ddocentErrorCount(working_dir, vcf_file)
+
 }
 ```
 
@@ -287,8 +293,11 @@ write.csv(filtering_results, paste0(working_dir,"/", project_name, "/output/filt
 Summary of # SNPs retained after each individual filtering step.
 ```{r}
 if(filtering==T){
+#Number of SNPs kept after each filter applied (wrangled)
+#TODO OVERHAUL 
 
-
+#save filtering
+write.csv(filtering_results, paste0(working_dir,"/", project_name, "/output/filtering.csv"), row.names = F)
 
 #wrangle filering out
 filtering_results <- read.csv(paste0(working_dir,"/", project_name, "/output/filtering.csv"))
@@ -296,6 +305,7 @@ filtering_results <- read.csv(paste0(working_dir,"/", project_name, "/output/fil
 filter_for_plot <- filtering_results %>% dplyr::select(filter, SNPs) %>% 
                       arrange(desc(SNPs), filter) %>% 
                         mutate(prop_filtered = 1 - ( (SNPs) / SNPs[1] ))
+
 
 #generate plot output
 snps_fig <- ggplot(data=filter_for_plot) + geom_bar(aes(x=reorder(filter,-SNPs), y=SNPs, fill=SNPs), stat="identity") + 
@@ -314,6 +324,7 @@ snps_prop_fig <-   ggplot(data=filter_for_plot) + geom_bar(aes(x=reorder(filter,
         plot.margin = unit(c(0.2,0.2,0.2,0.2), "cm")) +
     ggtitle("Remaining SNPs after each filter") +
     xlab("\nFilter") + ylab("\n# SNPs") + labs(fill="Proportion \nFiltered") + viridis::scale_fill_viridis()
+
 
 
 #create output folder
@@ -354,12 +365,8 @@ Takes parameters above and runs the script *preAnalysis.R*. This script reads th
 ```{r PreAnalysisRun, warning=TRUE}
 #runs pre-analysis
 
-#list current sample names from VCF
 samples(scanVcfHeader(vcf_file))
-
-#IMPORTANT: create a file <project_name>_fixed_samples.txt to rename your vcf samples. List each sample in the SAME order as the output from the line above, with whatever desired name changes you wish to make
-
-#`bcftools reheader -s <txt file of samples> -o <out.vcf> -i <in.vcf>`
+#used `bcftools reheader -s <txt file of samples> -o <out.vcf> -i <in.vcf>
 system(paste0("bcftools reheader -s ", project_name, "_fixed_samples.txt -o", project_name, "_reheader.vcf final_filter_", vcf_file))
 filtered_reheadered_vcf_file <- paste0(project_name,"_reheader.vcf")
 samples(scanVcfHeader(filtered_reheadered_vcf_file))
@@ -392,12 +399,12 @@ fst.calc <- c("poolfstat", "popoolation")
 include.multiallelic <- TRUE #whether to include multiallelic sites in analysis
 include.indels <- FALSE #whether to include insertions and deletions in analysis
 min_count <- 2 #minimum count of minor allele (DEFAULT=2)
-min_cov <- 5 #minimum coverage (in ALL populations) (DEFAULT=2)
+min_cov <- 10#minimum coverage (in ALL populations) (DEFAULT=2)
 max_cov <- 1000 #maximum coverage, provide either a single value or a vector of maximum values per population (DEFAULT=1000)
 #vector example for three populations:
 #max_cov <- c(500, 600, 700)
 window_size <- 1 #set to 1 for SNP-specific FST calculation
-pool_size <- c(25,23,39,39,23,31,25,32,42,25,37,25,25,25,29,23) #vector of all pool sizes in same order as POPS (one value if all pools are the same size)
+pool_size <- c(25,102,38,37,29,32,32,40,30,28,38,30,30,29,33,30) #vector of all pool sizes (one value if all pools are  the same size)
 POPS
 #pool_size <- c(51,46,57,24,47,57,47,44,40,50)
  #number of individuals per pool, provide either a single value or a vector of individuals per pool
@@ -462,14 +469,13 @@ fasta_generation <- TRUE
 #first_mincov=5, last_mincov=75, cov_step=5 will produce analyses for 5x, 10x, 15x...70x, 75x
 first_mincov=10
 last_mincov=70
-cov_step=5
+cov_step=10
 
 #minimum fraction pairwise comparisions needed to be included
 min.pairwise.prop <- 0.5
 
 #remove any SNPs with low p-values (warning, may cause uneven SNP number between comparisons)
 lowP_removal=F
-
 #mask low p-value and low depth sites to Fst=0
 lowP_to_zeros=T
 lowDP_to_zeros=T
@@ -553,30 +559,34 @@ all_loci_distribution_plot(data_in=postpop.master.long_poolfstat,
 ### FST heatmap parameters
 Choose a coverage cutoff and whether to only include sites called in all pools for heatmap generation.
 ```{r FSTHeatmaps}
+
+#TODO color scales on heat map
 #pick a heatmap coverage based on summary plots above
-heatmap_cov <- 30
+heatmap_cov <- 10
+#pool_order <- POPS
 
-pool_order <- POPS
 
-#manually reorder populations for plotting
-# pool_order <- c("LAY",
-#                 "GAR",
-#                 "FFS",
-#                 "OAHU-NS",
-#                 "OAHU-LW",
-#                 "OAHU-WW",
-#                 "OAHU-SS",
-#                 "MOL1",
-#                 "MOL3",
-#                 "MOL4",
-#                 "MOL5",
-#                 "MOL6",
-#                 "MOL7",
-#                 "MOL8",
-#                 "MAUI",
-#                 "HAW")
 
-#indlude to force diagonal on matrix upper-left -> lower-right
+pool_order <- c(
+  "POP1",
+  "POP2",
+  "POP3",
+  "POP4",
+  "POP5",
+  "POP6",
+  "POP7",
+  "POP8",
+  "POP9",
+  "POP10",
+  "POP11",
+  "POP12",
+  "POP13",
+  "POP14",
+  "POP15",
+  "POP16"
+)
+
+
 pool_order <- rev(pool_order)
 
 #Choose desired color pallette
@@ -586,21 +596,28 @@ palette="Denali"
 #light or dark theme
 theme="dark"
 
+pools_to_remove <- "none"
+
 #edit the generate_heatmap function for any desired aesthetic changes
 
-plot_heatmaps(fst.c="popoolation", include_called_allpops=F)
+plot_heatmaps(fst.c="popoolation", include_called_allpops=F, pools_to_remove=pools_to_remove)
 
 if(include_called_allpops){
-  plot_heatmaps(fst.c="popoolation", include_called_allpops=T)
+  plot_heatmaps(fst.c="popoolation", include_called_allpops=T, pools_to_remove=pools_to_remove)
 }
 
-plot_heatmaps(fst.c="poolfstat", include_called_allpops=F)
+plot_heatmaps(fst.c="poolfstat", include_called_allpops=F, pools_to_remove=pools_to_remove)
 
 if(include_called_allpops){
-  plot_heatmaps(fst.c="poolfstat", include_called_allpops=T)
+  plot_heatmaps(fst.c="poolfstat", include_called_allpops=T, pools_to_remove=pools_to_remove)
   }
 
+
+
 ```
+
+
+
 ### Map setup **NOT STABLE**
 ```{r}
 
@@ -668,3 +685,4 @@ p1 <-  ggplot() + worldmap +
 
 p1
 ```
+
