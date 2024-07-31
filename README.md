@@ -1,5 +1,4 @@
-
-# ![assesspool_logo](https://github.com/user-attachments/assets/feb20119-30e3-46f6-8ea3-299bdbed1160)
+![assesspool_logo_sm](https://github.com/user-attachments/assets/cfa839d5-086b-434b-9880-9e69cb5cc265)
 assessPool v2.0.0
 Pool-Seq analysis software
 
