@@ -1,6 +1,6 @@
 ![assesspool_logo_sm](https://github.com/user-attachments/assets/cfa839d5-086b-434b-9880-9e69cb5cc265)
 
-assessPool v2.0.0
+assessPool v2
 Pool-Seq analysis software
 
 * Filters SNPs based on adjustable criterion with suggestions for pooled data 
