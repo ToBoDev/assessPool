@@ -18,6 +18,8 @@ Pool-Seq analysis software
 5. Open assessPool_main.Rmd file in RStudio
 6. Make sure you have your SNP file (.vcf) and reference file (.fasta) in the working directory
 7. Note - the first time you run the script, library installation (via {renv}) will take some time. 
-8. Follow the steps in the main file to complete your analysis - run each code chunk and adjust parameters as needed 
+8. Follow the steps in the main file to complete your analysis - run each code chunk and adjust parameters as needed '
+
+   Example data can be accessed [via Zenodo](https://doi.org/10.5281/zenodo.13388658)
   
  See the [wiki](https://github.com/ToBoDev/assessPool/wiki) for more information!
